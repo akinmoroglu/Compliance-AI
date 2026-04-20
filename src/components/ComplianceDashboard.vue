@@ -427,25 +427,15 @@ async function nextStep() {
           <div class="space-y-3">
             <h3 class="font-bold text-sm text-foreground">Visual Creative</h3>
 
-            <!-- Hidden real file input -->
-            <input
-              ref="fileInputRef"
-              type="file"
-              accept="image/*,video/*"
-              class="hidden"
-              aria-label="Upload creative file"
-              @change="handleFileUpload"
-            />
-
             <div
-              @click="fileInputRef?.click()"
+              @click="triggerUploadSingle"
               class="border-2 border-dashed border-border rounded-xl p-8 hover:bg-muted/50 transition-colors cursor-pointer flex flex-col items-center justify-center text-center group"
               :class="uploadedFile ? 'bg-muted/30 border-primary/50 min-h-[200px]' : 'min-h-[280px]'"
               role="button"
               tabindex="0"
               aria-label="Click to upload image or video"
-              @keydown.enter="fileInputRef?.click()"
-              @keydown.space.prevent="fileInputRef?.click()"
+              @keydown.enter="triggerUploadSingle"
+              @keydown.space.prevent="triggerUploadSingle"
             >
               <template v-if="!uploadedFile">
                 <div class="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center text-primary mb-4 group-hover:scale-110 transition-transform">
@@ -470,10 +460,9 @@ async function nextStep() {
               <template v-else>
                 <div class="w-full h-full flex flex-col items-center justify-center space-y-4">
                   <div class="w-56 h-56 bg-primary/20 rounded-xl flex items-center justify-center border-2 border-primary/30 text-primary font-bold shadow-inner relative overflow-hidden">
-                    <img :src="uploadedFile || 'https://via.placeholder.com/300x500/1a1a2e/e94560?text=Mock+Ad'" class="object-cover w-full h-full opacity-80" />
-                    <div class="absolute inset-0 flex items-center justify-center bg-black/40"><span class="bg-background px-3 py-1 rounded text-xs truncate max-w-[80%]">{{ uploadedFileBlob?.name || 'mock-creative.jpg' }}</span></div>
+                    <img :src="uploadedFile" class="object-cover w-full h-full opacity-80" />
+                    <div class="absolute inset-0 flex items-center justify-center bg-black/40"><span class="bg-background px-3 py-1 rounded text-xs truncate max-w-[80%]">{{ uploadedFileBlob?.name }}</span></div>
                   </div>
-                  <span class="text-xs text-muted-foreground">{{ uploadedFileName }}</span>
                   <span class="text-sm font-bold text-primary cursor-pointer hover:underline">Change File</span>
                 </div>
               </template>
