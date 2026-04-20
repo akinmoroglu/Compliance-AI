@@ -1,0 +1,6 @@
+.env
+.env.*
+*.log
+server
+diagnose_gemini.go
+list_models.go

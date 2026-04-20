@@ -1,0 +1,9 @@
+[build]
+buildCommand = "npm install && npm run build"
+watchPatterns = ["src/**", "index.html", "vite.config.ts"]
+
+[deploy]
+startCommand = "npx serve dist -p ${PORT:-3000}"
+healthcheckPath = "/"
+healthcheckTimeout = 30
+restartPolicyType = "on_failure"

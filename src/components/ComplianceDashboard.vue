@@ -225,7 +225,8 @@ async function nextStep() {
         }
       }
 
-      const response = await fetch('http://localhost:8080/checks', {
+      const apiBase = import.meta.env.VITE_API_URL ?? 'http://localhost:8080'
+      const response = await fetch(`${apiBase}/checks`, {
         method: 'POST',
         // Important: DO NOT set Content-Type header. 
         // The browser automatically sets multipart/form-data and the boundary.
