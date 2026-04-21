@@ -1,0 +1,795 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Ad Compliance Checker — Architecture Diagrams</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/mermaid/10.6.1/mermaid.min.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: #f4f5f7;
+      color: #1a1a2e;
+      padding: 40px 32px;
+    }
+    h1 {
+      font-size: 22px;
+      font-weight: 700;
+      color: #1a1a2e;
+      margin-bottom: 4px;
+    }
+    .subtitle {
+      font-size: 13px;
+      color: #6b7280;
+      margin-bottom: 48px;
+    }
+    .section {
+      margin-bottom: 56px;
+    }
+    .section-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+    .section-num {
+      width: 28px; height: 28px;
+      background: #1a1a2e;
+      color: white;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 12px; font-weight: 700;
+      flex-shrink: 0;
+    }
+    .section-title {
+      font-size: 16px;
+      font-weight: 700;
+      color: #1a1a2e;
+    }
+    .section-desc {
+      font-size: 13px;
+      color: #6b7280;
+      margin-top: 2px;
+    }
+    .diagram-card {
+      background: white;
+      border-radius: 12px;
+      border: 1px solid #e5e7eb;
+      padding: 32px;
+      overflow-x: auto;
+    }
+
+    /* ── DIAGRAM 1: Pipeline ── */
+    .pipeline {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0;
+      min-width: 600px;
+    }
+    .pipe-row {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      width: 100%;
+    }
+    .pipe-node {
+      border-radius: 10px;
+      padding: 12px 20px;
+      text-align: center;
+      font-size: 13px;
+      font-weight: 600;
+      min-width: 180px;
+      border: 2px solid transparent;
+    }
+    .pipe-input { background: #f0f9ff; border-color: #0ea5e9; color: #0369a1; }
+    .pipe-prefilter { background: #fefce8; border-color: #eab308; color: #854d0e; }
+    .pipe-phase0 { background: #fef3c7; border-color: #f59e0b; color: #92400e; }
+    .pipe-phase1 { background: #ede9fe; border-color: #8b5cf6; color: #5b21b6; }
+    .pipe-phase2 { background: #ecfdf5; border-color: #10b981; color: #065f46; }
+    .pipe-phase3 { background: #eff6ff; border-color: #3b82f6; color: #1d4ed8; }
+    .pipe-fix { background: #fff7ed; border-color: #f97316; color: #9a3412; }
+    .pipe-output-nc { background: #fef2f2; border-color: #ef4444; color: #991b1b; }
+    .pipe-output-ok { background: #ecfdf5; border-color: #22c55e; color: #15803d; }
+    .pipe-node .sub { font-size: 11px; font-weight: 400; margin-top: 3px; opacity: 0.8; }
+
+    .arrow-down {
+      width: 2px; height: 28px;
+      background: #d1d5db;
+      margin: 0 auto;
+      position: relative;
+    }
+    .arrow-down::after {
+      content: '';
+      position: absolute;
+      bottom: -6px; left: -4px;
+      border-left: 5px solid transparent;
+      border-right: 5px solid transparent;
+      border-top: 7px solid #d1d5db;
+    }
+    .arrow-right {
+      width: 28px; height: 2px;
+      background: #d1d5db;
+      position: relative;
+      flex-shrink: 0;
+    }
+    .arrow-right::after {
+      content: '';
+      position: absolute;
+      right: -6px; top: -4px;
+      border-top: 5px solid transparent;
+      border-bottom: 5px solid transparent;
+      border-left: 7px solid #d1d5db;
+    }
+
+    .exit-label {
+      font-size: 11px;
+      color: #ef4444;
+      font-weight: 600;
+      white-space: nowrap;
+    }
+    .exit-group {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    /* parallel agents */
+    .agents-row {
+      display: flex;
+      gap: 10px;
+      justify-content: center;
+      flex-wrap: wrap;
+      margin: 4px 0;
+    }
+    .agent-box {
+      background: #f0fdf4;
+      border: 1.5px solid #86efac;
+      border-radius: 8px;
+      padding: 8px 12px;
+      font-size: 11px;
+      font-weight: 600;
+      color: #15803d;
+      text-align: center;
+      min-width: 100px;
+    }
+    .agent-box .code { font-size: 10px; color: #16a34a; margin-top: 2px; }
+    .agent-box.special { background: #fffbeb; border-color: #fcd34d; color: #92400e; }
+    .agent-box.special .code { color: #b45309; }
+
+    .bracket {
+      width: 80%;
+      border: 2px solid #10b981;
+      border-bottom: none;
+      border-radius: 8px 8px 0 0;
+      height: 12px;
+      margin: 0 auto;
+    }
+    .bracket-bottom {
+      width: 80%;
+      border: 2px solid #10b981;
+      border-top: none;
+      border-radius: 0 0 8px 8px;
+      height: 12px;
+      margin: 0 auto;
+    }
+    .parallel-label {
+      font-size: 10px;
+      color: #10b981;
+      font-weight: 700;
+      text-align: center;
+      margin: 2px 0;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+
+    /* ── DIAGRAM 2: Scoring Waterfall ── */
+    .scoring {
+      min-width: 700px;
+    }
+    .score-row {
+      display: flex;
+      align-items: stretch;
+      margin-bottom: 0;
+    }
+    .score-rule {
+      flex: 1;
+      border: 1.5px solid #e5e7eb;
+      border-radius: 10px;
+      padding: 14px 18px;
+      margin-bottom: 10px;
+    }
+    .score-rule .rule-label {
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      margin-bottom: 4px;
+    }
+    .score-rule .rule-condition {
+      font-size: 13px;
+      font-weight: 600;
+      color: #1a1a2e;
+      margin-bottom: 6px;
+    }
+    .score-rule .rule-math {
+      font-family: 'Courier New', monospace;
+      font-size: 12px;
+      color: #374151;
+      background: #f9fafb;
+      padding: 6px 10px;
+      border-radius: 6px;
+      margin-bottom: 6px;
+    }
+    .score-rule .rule-output {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      padding: 3px 9px;
+      border-radius: 99px;
+      font-size: 11px;
+      font-weight: 600;
+    }
+    .badge-red { background: #fef2f2; color: #dc2626; border: 1px solid #fecaca; }
+    .badge-orange { background: #fff7ed; color: #ea580c; border: 1px solid #fed7aa; }
+    .badge-yellow { background: #fefce8; color: #ca8a04; border: 1px solid #fef08a; }
+    .badge-green { background: #f0fdf4; color: #16a34a; border: 1px solid #bbf7d0; }
+    .badge-blue { background: #eff6ff; color: #2563eb; border: 1px solid #bfdbfe; }
+    .badge-gray { background: #f9fafb; color: #374151; border: 1px solid #e5e7eb; }
+
+    .rule-r1 { border-color: #fca5a5; background: #fff5f5; }
+    .rule-r2 { border-color: #fca5a5; background: #fff5f5; }
+    .rule-r3 { border-color: #fdba74; background: #fffbf5; }
+    .rule-r4 { border-color: #fde68a; background: #fffef5; }
+    .rule-r5 { border-color: #86efac; background: #f7fff8; }
+    .rule-r6 { border-color: #93c5fd; background: #f5f9ff; }
+
+    .waterfall-connector {
+      display: flex;
+      align-items: center;
+      margin-bottom: 2px;
+      padding-left: 24px;
+      gap: 8px;
+    }
+    .wc-line { width: 2px; height: 10px; background: #d1d5db; }
+    .wc-label { font-size: 11px; color: #9ca3af; }
+
+    /* ── DIAGRAM 3: Taxonomy ── */
+    .taxonomy-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr 1fr;
+      gap: 16px;
+      min-width: 700px;
+    }
+    .tax-col { }
+    .tax-header {
+      border-radius: 8px 8px 0 0;
+      padding: 10px 14px;
+      font-size: 13px;
+      font-weight: 700;
+      text-align: center;
+    }
+    .tax-header .prefix {
+      font-size: 18px;
+      font-family: 'Courier New', monospace;
+      display: block;
+      margin-bottom: 2px;
+    }
+    .tax-h-p { background: #dc2626; color: white; }
+    .tax-h-a { background: #ea580c; color: white; }
+    .tax-h-r { background: #d97706; color: white; }
+    .tax-h-m { background: #2563eb; color: white; }
+
+    .tax-meta {
+      border-left: 2px solid;
+      border-right: 2px solid;
+      padding: 8px 14px;
+      font-size: 11px;
+    }
+    .tax-meta-p { border-color: #dc2626; background: #fff5f5; color: #7f1d1d; }
+    .tax-meta-a { border-color: #ea580c; background: #fff8f5; color: #7c2d12; }
+    .tax-meta-r { border-color: #d97706; background: #fffcf0; color: #78350f; }
+    .tax-meta-m { border-color: #2563eb; background: #f5f9ff; color: #1e3a8a; }
+
+    .tax-items {
+      border: 2px solid;
+      border-top: none;
+      border-radius: 0 0 8px 8px;
+      padding: 10px 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .tax-items-p { border-color: #dc2626; background: white; }
+    .tax-items-a { border-color: #ea580c; background: white; }
+    .tax-items-r { border-color: #d97706; background: white; }
+    .tax-items-m { border-color: #2563eb; background: white; }
+
+    .tax-item {
+      font-size: 11px;
+      font-family: 'Courier New', monospace;
+      padding: 4px 8px;
+      border-radius: 5px;
+      font-weight: 600;
+    }
+    .tax-item-p { background: #fef2f2; color: #991b1b; }
+    .tax-item-a { background: #fff7ed; color: #9a3412; }
+    .tax-item-r { background: #fffbeb; color: #92400e; }
+    .tax-item-m { background: #eff6ff; color: #1d4ed8; }
+    .tax-item .name { font-size: 10px; font-weight: 400; color: #6b7280; font-family: sans-serif; margin-top: 1px; }
+
+    /* ── DIAGRAM 4: Output Structure ── */
+    .output-card {
+      background: #1a1a2e;
+      border-radius: 10px;
+      padding: 24px;
+      font-family: 'Courier New', monospace;
+      font-size: 13px;
+      color: #e2e8f0;
+      line-height: 1.8;
+      position: relative;
+      overflow: hidden;
+    }
+    .output-card::before {
+      content: 'JSON Response';
+      position: absolute;
+      top: 10px; right: 16px;
+      font-size: 10px;
+      color: #64748b;
+      font-family: sans-serif;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+    .oc-key { color: #7dd3fc; }
+    .oc-str { color: #86efac; }
+    .oc-num { color: #fbbf24; }
+    .oc-arr { color: #c084fc; }
+    .oc-comment { color: #64748b; font-family: sans-serif; font-size: 11px; }
+
+    .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+
+    .divider { height: 1px; background: #e5e7eb; margin: 28px 0; }
+  </style>
+</head>
+<body>
+
+  <h1>Ad Compliance Checker — Architecture Diagrams</h1>
+  <p class="subtitle">Phase 1 · Meta (Facebook + Instagram) · Visual implementation reference</p>
+
+  <!-- ═══════════════════════════════════════════════════════
+       DIAGRAM 1 — Pipeline
+  ═══════════════════════════════════════════════════════ -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-num">1</div>
+      <div>
+        <div class="section-title">Evaluation Pipeline</div>
+        <div class="section-desc">How an ad flows from submission to result. Each phase uses a different tool — LLM agents for understanding, pure software for scoring.</div>
+      </div>
+    </div>
+    <div class="diagram-card">
+      <div class="pipeline">
+
+        <!-- Input -->
+        <div class="pipe-node pipe-input">
+          📤 Ad Submitted
+          <div class="sub">copy · creative · landing_page_url · age_min</div>
+        </div>
+        <div class="arrow-down"></div>
+
+        <!-- Pre-filter -->
+        <div class="pipe-row">
+          <div class="pipe-node pipe-prefilter">
+            ⚡ Pre-filter
+            <div class="sub">Keyword / Regex — no LLM</div>
+          </div>
+          <div class="arrow-right"></div>
+          <div class="exit-group">
+            <div class="exit-label">Hard keyword match →</div>
+            <div class="pipe-node pipe-output-nc" style="min-width:130px; font-size:12px; padding:8px 12px;">
+              🚫 not_compliant
+              <div class="sub">score: 0  (fast exit)</div>
+            </div>
+          </div>
+        </div>
+        <div class="arrow-down"></div>
+
+        <!-- Phase 0 -->
+        <div class="pipe-row">
+          <div class="pipe-node pipe-phase0">
+            🔍 Phase 0 — Identity Gate
+            <div class="sub">P_IMPERSONATION check</div>
+          </div>
+          <div class="arrow-right"></div>
+          <div class="exit-group">
+            <div class="exit-label">Fake brand/person →</div>
+            <div class="pipe-node pipe-output-nc" style="min-width:130px; font-size:12px; padding:8px 12px;">
+              🚫 not_compliant
+              <div class="sub">score: 0</div>
+            </div>
+          </div>
+        </div>
+        <div class="arrow-down"></div>
+
+        <!-- Phase 1 -->
+        <div class="pipe-row">
+          <div class="pipe-node pipe-phase1">
+            🏷️ Phase 1 — Category Classifier
+            <div class="sub">Assigns exactly one category</div>
+          </div>
+          <div class="arrow-right"></div>
+          <div class="exit-group">
+            <div class="exit-label">PROHIBITED category →</div>
+            <div class="pipe-node pipe-output-nc" style="min-width:130px; font-size:12px; padding:8px 12px;">
+              🚫 not_compliant
+              <div class="sub">score: 0</div>
+            </div>
+          </div>
+        </div>
+        <div class="arrow-down"></div>
+
+        <!-- Phase 2 bracket top -->
+        <div style="width:100%; max-width:620px;">
+          <div class="parallel-label">⟵ Phase 2 — Parallel Agents (all run simultaneously) ⟶</div>
+          <div class="bracket"></div>
+          <div class="agents-row" style="margin-top:0; padding: 10px 0;">
+            <div class="agent-box">
+              Prohibited Agent
+              <div class="code">→ P_ codes</div>
+            </div>
+            <div class="agent-box">
+              Auth-Required Agent
+              <div class="code">→ A_ codes</div>
+            </div>
+            <div class="agent-box">
+              Restricted Agent
+              <div class="code">→ R_ codes</div>
+            </div>
+            <div class="agent-box special">
+              Personal Attribute Agent
+              <div class="code">→ P_PERSONAL_ATTRIBUTE<br/>runs on ALL ads</div>
+            </div>
+            <div class="agent-box">
+              Quality Agent
+              <div class="code">→ M_ codes</div>
+            </div>
+          </div>
+          <div class="bracket-bottom"></div>
+        </div>
+        <div class="arrow-down"></div>
+
+        <!-- Phase 3 -->
+        <div class="pipe-node pipe-phase3" style="min-width:260px;">
+          ⚙️ Phase 3 — Scoring Engine
+          <div class="sub">Pure Python · No LLM · Age targeting check + score waterfall</div>
+        </div>
+        <div class="arrow-down"></div>
+
+        <!-- Fix Generation -->
+        <div class="pipe-node pipe-fix" style="min-width:260px;">
+          ✏️ Fix Generation Agent
+          <div class="sub">Per violation · Constrained rewrite · Context-specific</div>
+        </div>
+        <div class="arrow-down"></div>
+
+        <!-- Final outputs -->
+        <div class="pipe-row" style="gap: 32px;">
+          <div class="pipe-node pipe-output-nc" style="min-width:200px;">
+            🚫 not_compliant
+            <div class="sub">score: 0 · P_ or unauthorized A_<br/>User sees: why + policy ref</div>
+          </div>
+          <div class="pipe-node pipe-output-ok" style="min-width:200px;">
+            ✅ compliant
+            <div class="sub">score: 1–100 · Violations shown<br/>User decides what to do</div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ═══════════════════════════════════════════════════════
+       DIAGRAM 2 — Scoring Engine
+  ═══════════════════════════════════════════════════════ -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-num">2</div>
+      <div>
+        <div class="section-title">Scoring Engine — Decision Waterfall</div>
+        <div class="section-desc">First matching rule wins. Pure deterministic software — no LLM involved. Takes the violations list from Phase 2 agents as input.</div>
+      </div>
+    </div>
+    <div class="diagram-card">
+      <div class="scoring">
+
+        <div class="score-rule rule-r1">
+          <div class="rule-label" style="color:#dc2626;">Rule 1 — Prohibited violation</div>
+          <div class="rule-condition">Any P_ code in violations list?</div>
+          <div class="rule-math">if p_codes: → immediate exit</div>
+          <div class="rule-output">
+            <span class="badge badge-red">score: 0</span>
+            <span class="badge badge-red">High Risk</span>
+            <span class="badge badge-red">not_compliant</span>
+            <span class="badge badge-gray">No fix possible</span>
+          </div>
+        </div>
+
+        <div class="waterfall-connector"><div class="wc-line"></div><div class="wc-label">no P_ → continue</div></div>
+
+        <div class="score-rule rule-r2">
+          <div class="rule-label" style="color:#dc2626;">Rule 2 — Unauthorized authorization-required category</div>
+          <div class="rule-condition">Any A_ code AND advertiser not authorized?</div>
+          <div class="rule-math">if a_codes and not authorized: → immediate exit</div>
+          <div class="rule-output">
+            <span class="badge badge-red">score: 0</span>
+            <span class="badge badge-red">High Risk</span>
+            <span class="badge badge-red">not_compliant</span>
+            <span class="badge badge-orange">Shows authorization path</span>
+          </div>
+        </div>
+
+        <div class="waterfall-connector"><div class="wc-line"></div><div class="wc-label">no unauthorized A_ → continue</div></div>
+
+        <div class="score-rule rule-r3">
+          <div class="rule-label" style="color:#ea580c;">Rule 3 — Restricted content violations</div>
+          <div class="rule-condition">Any R_ codes present? (e.g. weight-loss claim, body shaming, health claim...)</div>
+          <div class="rule-math">
+            base = 50<br/>
+            − 10 × (each additional R_ after the first)<br/>
+            − 5 × (each M_ stacked on top)<br/>
+            floor = 1
+          </div>
+          <div class="rule-output">
+            <span class="badge badge-orange">score: 1–50</span>
+            <span class="badge badge-orange">Medium or High Risk</span>
+            <span class="badge badge-green">compliant</span>
+            <span class="badge badge-blue">Fix shown per violation</span>
+          </div>
+          <div style="margin-top:10px; background:#f9fafb; border-radius:6px; padding:10px 14px;">
+            <div style="font-size:11px; font-weight:700; color:#9ca3af; margin-bottom:8px; text-transform:uppercase; letter-spacing:0.05em;">Examples</div>
+            <div style="display:flex; flex-wrap:wrap; gap:8px; font-size:12px;">
+              <span style="background:white; border:1px solid #e5e7eb; border-radius:6px; padding:4px 10px;">1 R_ only → <strong>50</strong></span>
+              <span style="background:white; border:1px solid #e5e7eb; border-radius:6px; padding:4px 10px;">2 R_ → <strong>40</strong></span>
+              <span style="background:white; border:1px solid #e5e7eb; border-radius:6px; padding:4px 10px;">3 R_ → <strong>30</strong></span>
+              <span style="background:white; border:1px solid #e5e7eb; border-radius:6px; padding:4px 10px;">2 R_ + 1 M_ → <strong>35</strong></span>
+              <span style="background:white; border:1px solid #e5e7eb; border-radius:6px; padding:4px 10px;">1 R_ + 3 M_ → <strong>35</strong></span>
+            </div>
+          </div>
+        </div>
+
+        <div class="waterfall-connector"><div class="wc-line"></div><div class="wc-label">no R_ → continue</div></div>
+
+        <div class="score-rule rule-r4">
+          <div class="rule-label" style="color:#d97706;">Rule 4 — Quality / deception issues only</div>
+          <div class="rule-condition">M_ codes only (no P_, A_, or R_)? (e.g. urgency, narrative, hygiene, sensationalism...)</div>
+          <div class="rule-math">
+            base = 75<br/>
+            − 5 × (each additional M_ after the first)<br/>
+            floor = 45
+          </div>
+          <div class="rule-output">
+            <span class="badge badge-yellow">score: 45–75</span>
+            <span class="badge badge-yellow">Low or Medium Risk</span>
+            <span class="badge badge-green">compliant</span>
+            <span class="badge badge-blue">Fix shown per violation</span>
+          </div>
+          <div style="margin-top:10px; background:#f9fafb; border-radius:6px; padding:10px 14px;">
+            <div style="font-size:11px; font-weight:700; color:#9ca3af; margin-bottom:8px; text-transform:uppercase; letter-spacing:0.05em;">Examples</div>
+            <div style="display:flex; flex-wrap:wrap; gap:8px; font-size:12px;">
+              <span style="background:white; border:1px solid #e5e7eb; border-radius:6px; padding:4px 10px;">1 M_ → <strong>75</strong></span>
+              <span style="background:white; border:1px solid #e5e7eb; border-radius:6px; padding:4px 10px;">2 M_ → <strong>70</strong></span>
+              <span style="background:white; border:1px solid #e5e7eb; border-radius:6px; padding:4px 10px;">3 M_ → <strong>65</strong></span>
+              <span style="background:white; border:1px solid #e5e7eb; border-radius:6px; padding:4px 10px;">6 M_ → <strong>50</strong></span>
+              <span style="background:white; border:1px solid #e5e7eb; border-radius:6px; padding:4px 10px;">7+ M_ → <strong>45 (floor)</strong></span>
+            </div>
+          </div>
+        </div>
+
+        <div class="waterfall-connector"><div class="wc-line"></div><div class="wc-label">no violations → continue</div></div>
+
+        <div class="two-col">
+          <div class="score-rule rule-r5">
+            <div class="rule-label" style="color:#16a34a;">Rule 5 — Clean ad, standard category</div>
+            <div class="rule-condition">No violations + category is ALLOWED</div>
+            <div class="rule-math">score = 95  (range: 85–100)</div>
+            <div class="rule-output">
+              <span class="badge badge-green">score: 85–100</span>
+              <span class="badge badge-green">Low Risk</span>
+              <span class="badge badge-green">compliant</span>
+            </div>
+          </div>
+          <div class="score-rule rule-r6">
+            <div class="rule-label" style="color:#2563eb;">Rule 6 — Clean ad, sensitive category</div>
+            <div class="rule-condition">No violations + category is RESTRICTED or authorized AUTH_REQUIRED</div>
+            <div class="rule-math">score = 78  (range: 71–84)</div>
+            <div class="rule-output">
+              <span class="badge badge-blue">score: 71–84</span>
+              <span class="badge badge-green">Low Risk</span>
+              <span class="badge badge-green">compliant</span>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ═══════════════════════════════════════════════════════
+       DIAGRAM 3 — Violation Taxonomy
+  ═══════════════════════════════════════════════════════ -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-num">3</div>
+      <div>
+        <div class="section-title">Violation Code Taxonomy</div>
+        <div class="section-desc">All 34 violation codes across four tiers. Each agent in Phase 2 is responsible for one tier's codes.</div>
+      </div>
+    </div>
+    <div class="diagram-card">
+      <div class="taxonomy-grid">
+
+        <!-- P_ column -->
+        <div class="tax-col">
+          <div class="tax-header tax-h-p">
+            <span class="prefix">P_</span>
+            Prohibited
+          </div>
+          <div class="tax-meta tax-meta-p">Score: 0 · not_compliant<br/>No fix possible</div>
+          <div class="tax-items tax-items-p">
+            <div class="tax-item tax-item-p">P_CHILD_SAFETY<div class="name">Content exploiting minors</div></div>
+            <div class="tax-item tax-item-p">P_HATE_SPEECH<div class="name">Race, religion, identity attacks</div></div>
+            <div class="tax-item tax-item-p">P_HUMAN_EXPLOITATION<div class="name">Trafficking, forced labor</div></div>
+            <div class="tax-item tax-item-p">P_WEAPONS_SALE<div class="name">Firearms, explosives sale</div></div>
+            <div class="tax-item tax-item-p">P_ILLEGAL_DRUGS<div class="name">Controlled substances</div></div>
+            <div class="tax-item tax-item-p">P_COUNTERFEIT<div class="name">Fake branded goods</div></div>
+            <div class="tax-item tax-item-p">P_TOBACCO_NICOTINE<div class="name">Tobacco / e-cigarettes</div></div>
+            <div class="tax-item tax-item-p">P_VACCINE_DISCOURAGEMENT<div class="name">Anti-vaccine content</div></div>
+            <div class="tax-item tax-item-p">P_SUICIDE_SELF_HARM<div class="name">Self-harm promotion</div></div>
+            <div class="tax-item tax-item-p">P_BULLYING_HARASSMENT<div class="name">Targeted harassment</div></div>
+            <div class="tax-item tax-item-p">P_MISINFORMATION<div class="name">Health / election disinfo</div></div>
+            <div class="tax-item tax-item-p">P_PAYDAY_LOANS<div class="name">Loans ≤ 90 days</div></div>
+            <div class="tax-item tax-item-p">P_BINARY_OPTIONS_CFD<div class="name">Binary options / CFDs</div></div>
+            <div class="tax-item tax-item-p">P_ICO<div class="name">Initial Coin Offerings</div></div>
+            <div class="tax-item tax-item-p">P_DEEPFAKE<div class="name">AI identity manipulation</div></div>
+            <div class="tax-item tax-item-p">P_COVERT_SURVEILLANCE<div class="name">Stalkerware / spy tools</div></div>
+            <div class="tax-item tax-item-p">P_ADULT_EXPLICIT<div class="name">Explicit content / escorts</div></div>
+            <div class="tax-item tax-item-p">P_IMPERSONATION<div class="name">Fake brand / person</div></div>
+            <div class="tax-item tax-item-p" style="border: 1.5px solid #dc2626; background:#fde8e8;">P_PERSONAL_ATTRIBUTE<div class="name">★ Unique Meta rule — "Are you diabetic?"</div></div>
+          </div>
+        </div>
+
+        <!-- A_ column -->
+        <div class="tax-col">
+          <div class="tax-header tax-h-a">
+            <span class="prefix">A_</span>
+            Auth Required
+          </div>
+          <div class="tax-meta tax-meta-a">Score: 0 · not_compliant<br/>Shows authorization path</div>
+          <div class="tax-items tax-items-a">
+            <div class="tax-item tax-item-a">A_GAMBLING<div class="name">Meta written permission + 18+</div></div>
+            <div class="tax-item tax-item-a">A_DATING<div class="name">Meta written permission + 18+</div></div>
+            <div class="tax-item tax-item-a">A_CRYPTO_EXCHANGE<div class="name">Meta permission + regulatory license</div></div>
+            <div class="tax-item tax-item-a">A_CBD<div class="name">LegitScript cert + Meta permission</div></div>
+            <div class="tax-item tax-item-a">A_PRESCRIPTION_DRUGS<div class="name">LegitScript cert + Meta permission</div></div>
+            <div class="tax-item tax-item-a">A_ADDICTION_TREATMENT<div class="name">LegitScript cert + Meta permission</div></div>
+          </div>
+        </div>
+
+        <!-- R_ column -->
+        <div class="tax-col">
+          <div class="tax-header tax-h-r">
+            <span class="prefix">R_</span>
+            Restricted
+          </div>
+          <div class="tax-meta tax-meta-r">Score: 1–50 · compliant<br/>Fix provided</div>
+          <div class="tax-items tax-items-r">
+            <div class="tax-item tax-item-r">R_WEIGHT_LOSS_CLAIM<div class="name">Specific numeric weight claim</div></div>
+            <div class="tax-item tax-item-r">R_BEFORE_AFTER_WEIGHT<div class="name">Before/after weight imagery</div></div>
+            <div class="tax-item tax-item-r">R_BEFORE_AFTER_COSMETIC_WRINKLE<div class="name">Before/after anti-aging</div></div>
+            <div class="tax-item tax-item-r">R_BODY_SHAMING<div class="name">Negative self-perception copy</div></div>
+            <div class="tax-item tax-item-r">R_HEALTH_CLAIM<div class="name">Unproven disease/cure claim</div></div>
+            <div class="tax-item tax-item-r">R_GUARANTEED_OUTCOME<div class="name">Income / result guarantees</div></div>
+            <div class="tax-item tax-item-r">R_FINANCIAL_DISCLOSURE<div class="name">Missing APR / terms</div></div>
+            <div class="tax-item tax-item-r">R_AGE_TARGETING_BREACH<div class="name">age_min below required</div></div>
+            <div class="tax-item tax-item-r">R_SEXUAL_WELLNESS_FRAMING<div class="name">Explicit sexual wellness copy</div></div>
+            <div class="tax-item tax-item-r">R_SCAREWARE<div class="name">Fake OS alerts / virus warnings</div></div>
+          </div>
+        </div>
+
+        <!-- M_ column -->
+        <div class="tax-col">
+          <div class="tax-header tax-h-m">
+            <span class="prefix">M_</span>
+            Moderate
+          </div>
+          <div class="tax-meta tax-meta-m">Score: 45–75 · compliant<br/>Fix provided, user decides</div>
+          <div class="tax-items tax-items-m">
+            <div class="tax-item tax-item-m">M_URGENCY<div class="name">Countdown timers, "today only"</div></div>
+            <div class="tax-item tax-item-m">M_NARRATIVE<div class="name">Fake DMs, "store closing" stories</div></div>
+            <div class="tax-item tax-item-m">M_HYGIENE<div class="name">Typos, low-res, unprofessional</div></div>
+            <div class="tax-item tax-item-m">M_SENSATIONALISM<div class="name">Clickbait, fake play buttons</div></div>
+            <div class="tax-item tax-item-m">M_DISCLOSURE<div class="name">Missing FDA / "results vary"</div></div>
+            <div class="tax-item tax-item-m">M_SUGGESTIVE<div class="name">"Studies show" without citation</div></div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ═══════════════════════════════════════════════════════
+       DIAGRAM 4 — Output JSON structure
+  ═══════════════════════════════════════════════════════ -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-num">4</div>
+      <div>
+        <div class="section-title">What the Checker Returns</div>
+        <div class="section-desc">The structured output every check produces. One object per violation — the user sees violations as cards.</div>
+      </div>
+    </div>
+    <div class="diagram-card">
+      <div class="two-col">
+        <div>
+          <div style="font-size:12px; font-weight:700; color:#ef4444; margin-bottom:8px; text-transform:uppercase; letter-spacing:0.06em;">Example — not_compliant (score: 0)</div>
+          <div class="output-card">
+            {<br/>
+            &nbsp;&nbsp;<span class="oc-key">"action"</span>: <span class="oc-str">"not_compliant"</span>,<br/>
+            &nbsp;&nbsp;<span class="oc-key">"compliance_score"</span>: <span class="oc-num">0</span>,<br/>
+            &nbsp;&nbsp;<span class="oc-key">"risk_category"</span>: <span class="oc-str">"High Risk"</span>,<br/>
+            &nbsp;&nbsp;<span class="oc-key">"violations"</span>: <span class="oc-arr">[</span><br/>
+            &nbsp;&nbsp;&nbsp;&nbsp;{<br/>
+            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="oc-key">"code"</span>: <span class="oc-str">"P_PERSONAL_ATTRIBUTE"</span>,<br/>
+            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="oc-key">"title"</span>: <span class="oc-str">"Personal Attribute Assertion"</span>,<br/>
+            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="oc-key">"severity"</span>: <span class="oc-str">"PROHIBITED"</span>,<br/>
+            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="oc-key">"policy_reference"</span>: <span class="oc-str">"Section 2.12"</span>,<br/>
+            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="oc-key">"explanation"</span>: <span class="oc-str">"Are you struggling<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; with debt? implies<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; financial vulnerability"</span>,<br/>
+            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="oc-key">"suggested_fix"</span>: <span class="oc-str">"Designed to help you<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; reach financial freedom."</span><br/>
+            &nbsp;&nbsp;&nbsp;&nbsp;}<br/>
+            &nbsp;&nbsp;<span class="oc-arr">]</span><br/>
+            }
+          </div>
+        </div>
+        <div>
+          <div style="font-size:12px; font-weight:700; color:#16a34a; margin-bottom:8px; text-transform:uppercase; letter-spacing:0.06em;">Example — compliant with warnings (score: 35)</div>
+          <div class="output-card">
+            {<br/>
+            &nbsp;&nbsp;<span class="oc-key">"action"</span>: <span class="oc-str">"compliant"</span>,<br/>
+            &nbsp;&nbsp;<span class="oc-key">"compliance_score"</span>: <span class="oc-num">35</span>,<br/>
+            &nbsp;&nbsp;<span class="oc-key">"risk_category"</span>: <span class="oc-str">"Medium Risk"</span>,<br/>
+            &nbsp;&nbsp;<span class="oc-key">"violations"</span>: <span class="oc-arr">[</span><br/>
+            &nbsp;&nbsp;&nbsp;&nbsp;{<br/>
+            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="oc-key">"code"</span>: <span class="oc-str">"R_WEIGHT_LOSS_CLAIM"</span>,<br/>
+            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="oc-key">"severity"</span>: <span class="oc-str">"RESTRICTED"</span>,<br/>
+            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="oc-key">"explanation"</span>: <span class="oc-str">"Lose 20kg in 30 days<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; is a specific claim"</span>,<br/>
+            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="oc-key">"suggested_fix"</span>: <span class="oc-str">"Support your weight<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; management goals"</span><br/>
+            &nbsp;&nbsp;&nbsp;&nbsp;},<br/>
+            &nbsp;&nbsp;&nbsp;&nbsp;{<br/>
+            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="oc-key">"code"</span>: <span class="oc-str">"M_URGENCY"</span>,<br/>
+            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="oc-key">"severity"</span>: <span class="oc-str">"MODERATE"</span>,<br/>
+            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="oc-key">"explanation"</span>: <span class="oc-str">"Countdown timer<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; with no end date"</span>,<br/>
+            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="oc-key">"suggested_fix"</span>: <span class="oc-str">"Add sale end date<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; or remove timer"</span><br/>
+            &nbsp;&nbsp;&nbsp;&nbsp;}<br/>
+            &nbsp;&nbsp;<span class="oc-arr">]</span><br/>
+            }
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div style="text-align:center; font-size:12px; color:#9ca3af; padding-bottom: 20px;">
+    Ad Compliance Checker · Phase 1 · Meta only · v1.0 Draft · April 2026
+  </div>
+
+</body>
+</html>

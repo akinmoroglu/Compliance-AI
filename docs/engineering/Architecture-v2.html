@@ -1,0 +1,1053 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Compliance AI — Architecture v2</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/mermaid/10.6.1/mermaid.min.js"></script>
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f4f5f7;color:#1a1a2e;padding:40px 32px;max-width:1200px;margin:0 auto}
+
+    /* Header */
+    .doc-header{margin-bottom:48px}
+    h1{font-size:26px;font-weight:800;color:#1a1a2e;margin-bottom:6px}
+    .meta{font-size:13px;color:#6b7280;display:flex;gap:16px;flex-wrap:wrap;margin-top:8px}
+    .meta-tag{background:#e5e7eb;color:#374151;padding:3px 10px;border-radius:20px;font-size:12px;font-weight:600}
+
+    /* Sections */
+    .section{margin-bottom:64px}
+    .section-header{display:flex;align-items:center;gap:12px;margin-bottom:24px;padding-bottom:14px;border-bottom:2px solid #e5e7eb}
+    .section-num{width:32px;height:32px;background:#1a1a2e;color:white;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;flex-shrink:0}
+    .section-title{font-size:19px;font-weight:700;color:#1a1a2e}
+    .section-subtitle{font-size:13px;color:#6b7280;margin-left:auto}
+
+    /* Diagrams */
+    .diagram-wrap{background:white;border-radius:12px;padding:32px;border:1px solid #e5e7eb;overflow-x:auto}
+    .diagram-caption{font-size:12px;color:#9ca3af;text-align:center;margin-top:12px;font-style:italic}
+
+    /* Phase timeline */
+    .phase-timeline{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:#e5e7eb;border-radius:12px;overflow:hidden;border:1px solid #e5e7eb}
+    .phase-col{background:white;padding:0}
+    .phase-header{padding:16px 20px;border-bottom:1px solid #f3f4f6}
+    .phase-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px}
+    .phase-name{font-size:15px;font-weight:800}
+    .phase-desc{font-size:12px;color:#6b7280;margin-top:4px}
+    .phase-body{padding:16px 20px}
+    .phase-feature{display:flex;align-items:flex-start;gap:8px;padding:7px 0;border-bottom:1px solid #f9fafb;font-size:13px;color:#374151}
+    .phase-feature:last-child{border-bottom:none}
+    .phase-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;margin-top:4px}
+    .phase-footer{background:#f9fafb;padding:12px 20px;font-size:12px;color:#6b7280;border-top:1px solid #f3f4f6}
+
+    .phase-v1 .phase-header{background:#f0fdf4} .phase-v1 .phase-label{color:#16a34a} .phase-v1 .phase-name{color:#15803d} .phase-v1 .phase-dot{background:#22c55e}
+    .phase-v2 .phase-header{background:#eff6ff} .phase-v2 .phase-label{color:#2563eb} .phase-v2 .phase-name{color:#1d4ed8} .phase-v2 .phase-dot{background:#3b82f6}
+    .phase-v3 .phase-header{background:#fdf4ff} .phase-v3 .phase-label{color:#9333ea} .phase-v3 .phase-name{color:#7e22ce} .phase-v3 .phase-dot{background:#a855f7}
+
+    /* Use case cards */
+    .usecase-row{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+    .usecase-card{background:white;border-radius:12px;border:1px solid #e5e7eb;padding:20px}
+    .usecase-icon{font-size:24px;margin-bottom:10px}
+    .usecase-title{font-size:14px;font-weight:700;color:#1a1a2e;margin-bottom:6px}
+    .usecase-desc{font-size:13px;color:#6b7280;line-height:1.6}
+    .usecase-flow{margin-top:12px;font-size:12px;color:#9ca3af;font-style:italic}
+
+    /* Agent cards */
+    .agent-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:16px}
+    .agent-card{background:white;border-radius:12px;border:1px solid #e5e7eb;overflow:hidden}
+    .agent-card-header{padding:14px 18px 12px;border-bottom:1px solid #f3f4f6;display:flex;align-items:flex-start;gap:10px}
+    .agent-badges{display:flex;gap:6px;flex-wrap:wrap;margin-top:4px}
+    .badge{font-size:10px;font-weight:700;padding:3px 8px;border-radius:20px;white-space:nowrap}
+    .badge-llm{background:#ede9fe;color:#6d28d9}
+    .badge-det{background:#d1fae5;color:#065f46}
+    .badge-new{background:#fef3c7;color:#92400e}
+    .badge-p2{background:#fee2e2;color:#991b1b}
+    .badge-p3{background:#fdf4ff;color:#7e22ce}
+    .badge-vis{background:#e0f2fe;color:#0369a1}
+    .badge-audio{background:#fce7f3;color:#9d174d}
+    .agent-name{font-size:14px;font-weight:700;color:#1a1a2e}
+    .agent-desc{font-size:12px;color:#6b7280;margin-top:3px;line-height:1.5}
+    .agent-body{padding:14px 18px}
+    .io-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:#9ca3af;margin-bottom:4px;margin-top:10px}
+    .io-label:first-child{margin-top:0}
+    .io-item{font-size:12px;color:#374151;padding:3px 0;display:flex;align-items:flex-start;gap:6px}
+    .io-item::before{content:"›";color:#9ca3af;flex-shrink:0}
+    .agent-footer{background:#f9fafb;padding:10px 18px;font-size:11px;color:#6b7280;border-top:1px solid #f3f4f6;line-height:1.7}
+    .agent-footer strong{color:#374151}
+
+    /* Risk note inline */
+    .risk-inline{background:#fffbeb;border:1px solid #fcd34d;border-radius:6px;padding:6px 10px;font-size:11px;color:#92400e;margin-top:8px}
+
+    /* Tables */
+    table{width:100%;border-collapse:collapse;background:white;border-radius:12px;overflow:hidden;border:1px solid #e5e7eb}
+    th{background:#1a1a2e;color:white;padding:12px 16px;font-size:12px;text-align:left;font-weight:600}
+    td{padding:11px 16px;font-size:13px;color:#374151;border-bottom:1px solid #f3f4f6;vertical-align:top}
+    tr:last-child td{border-bottom:none}
+    tr:nth-child(even) td{background:#fafafa}
+    code{background:#f3f4f6;padding:2px 6px;border-radius:4px;font-family:'SF Mono','Fira Code',monospace;font-size:11px;color:#374151}
+
+    /* Improvement / concern cards */
+    .card-row{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+    .info-card{background:white;border-radius:12px;border:1px solid #e5e7eb;padding:20px}
+    .info-card h3{font-size:14px;font-weight:700;margin-bottom:12px}
+    .info-card ul{list-style:none}
+    .info-card li{font-size:13px;color:#374151;padding:7px 0;border-bottom:1px solid #f3f4f6;display:flex;gap:8px;align-items:flex-start;line-height:1.5}
+    .info-card li:last-child{border-bottom:none}
+    .icon{flex-shrink:0;font-size:14px;margin-top:1px}
+    .improve{border-left:3px solid #10b981} .improve h3{color:#065f46}
+    .concern{border-left:3px solid #f59e0b} .concern h3{color:#92400e}
+
+    /* Advisory UX */
+    .advisory-demo{border-radius:12px;overflow:hidden;border:1px solid #e5e7eb}
+    .advisory-demo-header{background:#1a1a2e;padding:14px 20px;color:white;font-size:13px;font-weight:700}
+    .advisory-demo-body{background:white;padding:20px;display:flex;flex-direction:column;gap:12px}
+    .advisory-card-demo{border-radius:8px;padding:14px;border:1px solid}
+    .advisory-violation{background:#fef2f2;border-color:#fca5a5}
+    .advisory-warn{background:#fffbeb;border-color:#fcd34d}
+    .advisory-info{background:#f0f9ff;border-color:#7dd3fc}
+    .advisory-top{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+    .advisory-badge{font-size:10px;font-weight:700;padding:2px 8px;border-radius:20px}
+    .av-badge{background:#fee2e2;color:#991b1b}
+    .aw-badge{background:#fef3c7;color:#92400e}
+    .ai-badge{background:#dbeafe;color:#1e40af}
+    .advisory-title{font-size:13px;font-weight:700}
+    .advisory-body{font-size:12px;color:#6b7280;line-height:1.6}
+    .advisory-action{display:inline-block;margin-top:8px;font-size:11px;font-weight:600;color:#374151;text-decoration:underline;cursor:pointer}
+    .no-score-note{font-size:11px;color:#9ca3af;font-style:italic}
+
+    /* Decision box */
+    .decision-row{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:16px}
+    .decision-box{background:white;border-radius:10px;border:1px solid #e5e7eb;padding:16px}
+    .decision-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:#9ca3af;margin-bottom:6px}
+    .decision-value{font-size:13px;font-weight:700;color:#1a1a2e;line-height:1.5}
+    .decision-note{font-size:11px;color:#6b7280;margin-top:4px}
+
+    /* Engineering callout */
+    .eng-callout{background:#f9fafb;border:1px solid #e5e7eb;border-left:3px solid #6b7280;border-radius:8px;padding:14px 18px;font-size:12px;color:#6b7280;margin-top:16px}
+    .eng-callout strong{color:#374151}
+
+    @media(max-width:768px){
+      .phase-timeline,.card-row,.usecase-row,.decision-row{grid-template-columns:1fr}
+    }
+  </style>
+</head>
+<body>
+
+<div class="doc-header">
+  <h1>Compliance AI — Architecture v2</h1>
+  <p style="font-size:13px;color:#6b7280;margin-top:4px">Rockads / Meta Ad Compliance Checker — Multi-Agent Pipeline</p>
+  <div class="meta">
+    <span class="meta-tag">Updated: April 2026</span>
+    <span class="meta-tag">8 Phase 1 agents</span>
+    <span class="meta-tag">Vision + Audio + LP + Alignment</span>
+    <span class="meta-tag">Apply Fix to Meta — Phase 3</span>
+    <span class="meta-tag">v2 target build</span>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- SECTION 1: PRODUCT PHASES                                   -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+<div class="section">
+  <div class="section-header">
+    <div class="section-num">1</div>
+    <div class="section-title">Product Phases</div>
+    <div class="section-subtitle">Use this to decide what to build now vs. later</div>
+  </div>
+
+  <div class="phase-timeline">
+    <div class="phase-col phase-v1">
+      <div class="phase-header">
+        <div class="phase-label">Shipped / v1</div>
+        <div class="phase-name">Text-Only Compliance</div>
+        <div class="phase-desc">Copy analysis, 5 agents, basic scoring</div>
+      </div>
+      <div class="phase-body">
+        <div class="phase-feature"><div class="phase-dot"></div>Category Classifier</div>
+        <div class="phase-feature"><div class="phase-dot"></div>Violations Agent (~15 codes)</div>
+        <div class="phase-feature"><div class="phase-dot"></div>Auth Required Agent (2 codes)</div>
+        <div class="phase-feature"><div class="phase-dot"></div>Personal Attribute Agent</div>
+        <div class="phase-feature"><div class="phase-dot"></div>Fix Generation Agent</div>
+        <div class="phase-feature"><div class="phase-dot"></div>Scoring Engine (deterministic)</div>
+        <div class="phase-feature"><div class="phase-dot"></div>JSON API (text-only input)</div>
+      </div>
+      <div class="phase-footer">✓ Live. Baseline working.</div>
+    </div>
+
+    <div class="phase-col phase-v2">
+      <div class="phase-header">
+        <div class="phase-label">Building now / v2</div>
+        <div class="phase-name">Multimodal + Full Coverage</div>
+        <div class="phase-desc">Images, video, audio, LP, targeting, alignment</div>
+      </div>
+      <div class="phase-body">
+        <div class="phase-feature"><div class="phase-dot"></div>Vision Agent (image + video frames)</div>
+        <div class="phase-feature"><div class="phase-dot"></div>Audio Agent (voiceover/VO transcript)</div>
+        <div class="phase-feature"><div class="phase-dot"></div>LP Agent (Firecrawl — JS-SPA ready)</div>
+        <div class="phase-feature"><div class="phase-dot"></div>Targeting Checker (deterministic Go)</div>
+        <div class="phase-feature"><div class="phase-dot"></div>Alignment Agent (cross-source, Phase 2)</div>
+        <div class="phase-feature"><div class="phase-dot"></div>Advisory system (advisories[])</div>
+        <div class="phase-feature"><div class="phase-dot"></div>27 violation codes (vs ~15 in v1)</div>
+        <div class="phase-feature"><div class="phase-dot"></div>Multilingual semantic detection</div>
+        <div class="phase-feature"><div class="phase-dot"></div>Multipart form-data API</div>
+        <div class="phase-feature"><div class="phase-dot"></div>Pre-processor (ffmpeg: frames + audio)</div>
+      </div>
+      <div class="phase-footer">🔵 Architecture finalized. Ready to build.</div>
+    </div>
+
+    <div class="phase-col phase-v3">
+      <div class="phase-header">
+        <div class="phase-label">Next / v3</div>
+        <div class="phase-name">Platform Integration</div>
+        <div class="phase-desc">Apply Fix to Meta, connected ad accounts</div>
+      </div>
+      <div class="phase-body">
+        <div class="phase-feature"><div class="phase-dot"></div>"Apply Fix" — push corrected copy as new Meta ad draft</div>
+        <div class="phase-feature"><div class="phase-dot"></div>Pre-flight check for connected ad accounts</div>
+        <div class="phase-feature"><div class="phase-dot"></div>Rejected ad recovery workflow</div>
+        <div class="phase-feature"><div class="phase-dot"></div>Bulk compliance audit (agency accounts)</div>
+        <div class="phase-feature"><div class="phase-dot"></div>Tone-matched fix variants (brand voice)</div>
+        <div class="phase-feature"><div class="phase-dot"></div>Model routing config (Flash → Pro per agent)</div>
+        <div class="phase-feature"><div class="phase-dot"></div>Historical context / account risk scoring</div>
+      </div>
+      <div class="phase-footer">🟣 Feasible early — Rockads already has Meta API + ad accounts.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- SECTION 2: USE CASES                                         -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+<div class="section">
+  <div class="section-header">
+    <div class="section-num">2</div>
+    <div class="section-title">Core Use Cases</div>
+  </div>
+  <div class="usecase-row">
+    <div class="usecase-card">
+      <div class="usecase-icon">✈️</div>
+      <div class="usecase-title">Pre-flight Check (Primary)</div>
+      <div class="usecase-desc">Advertiser or agency writes an ad. Before submitting to Meta, they run it through Compliance AI. Get violations, severity, and fixes. Launch with confidence.</div>
+      <div class="usecase-flow">Write copy → Upload creative → Check → Fix → Submit to Meta</div>
+    </div>
+    <div class="usecase-card">
+      <div class="usecase-icon">🔴</div>
+      <div class="usecase-title">Rejected Ad Recovery (v3)</div>
+      <div class="usecase-desc">Meta rejects an ad with a vague code ("Misleading Claims"). Agency pastes the rejected copy + creative into Compliance AI to pinpoint the exact violation, get the fix, and push the corrected version as a new draft — without touching Meta Ads Manager manually.</div>
+      <div class="usecase-flow">Rejection notice → Paste ad → Check → Fix → Apply Fix to Meta (1-click)</div>
+    </div>
+    <div class="usecase-card">
+      <div class="usecase-icon">🏢</div>
+      <div class="usecase-title">Agency Bulk Audit (v3)</div>
+      <div class="usecase-desc">Agency manages dozens of ad accounts. Run Compliance AI across all active creatives for a connected account to catch policy drift before Meta flags the account.</div>
+      <div class="usecase-flow">Connect ad account → Fetch active ads → Batch check → Risk report</div>
+    </div>
+    <div class="usecase-card">
+      <div class="usecase-icon">⚠️</div>
+      <div class="usecase-title">Targeting Risk Advisory</div>
+      <div class="usecase-desc">Ad copy for alcohol or gambling product. User provides age targeting. Targeting Checker deterministically validates age_min and country rules — no LLM guesswork. If data is missing, advisory is raised but score is not penalized.</div>
+      <div class="usecase-flow">Copy + targeting data → Deterministic check → Hard violation or advisory</div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- SECTION 3: FULL PIPELINE DIAGRAM                            -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+<div class="section">
+  <div class="section-header">
+    <div class="section-num">3</div>
+    <div class="section-title">Full Pipeline — End-to-End</div>
+  </div>
+  <div class="diagram-wrap">
+    <div class="mermaid">
+flowchart TD
+    INPUT["🗂 User Input\n──────────────\nad_copy: string\nimage?: file\nvideo?: file\nlp_url?: string\nage_min?: int\ncountries?: string[]\nforce_refresh?: bool"]
+
+    PREPROCESS["⚙ Pre-Processor\n──────────────\n• ffmpeg → video frames ≤30\n• ffmpeg → audio track (.mp3)\n• Firecrawl → LP HTML render\n  (8s timeout, handles JS-SPAs)\n• Normalize & validate inputs\n• SHA-256 cache key check"]
+
+    CACHE{{"Cache\nhit?"}}
+    CACHED["Return cached\nresponse"]
+
+    INPUT --> PREPROCESS --> CACHE
+    CACHE -- Yes, force_refresh=false --> CACHED
+    CACHE -- No / force_refresh=true --> PHASE1
+
+    subgraph PHASE1["Phase 1 — 8 Parallel Goroutines  (sync.WaitGroup)"]
+        direction LR
+        CC["Category\nClassifier"]
+        VA["Violations\nAgent"]
+        ARA["Auth Required\nAgent"]
+        PAA["Personal Attr.\nAgent"]
+        VISION["Vision\nAgent ★"]
+        AUDIO["Audio\nAgent ★"]
+        LPA["LP Agent ★"]
+        TC["Targeting\nChecker ★\n(deterministic)"]
+    end
+
+    GATE{{"2+ input\nsources?"}}
+
+    PHASE1 --> GATE
+
+    subgraph PHASE2["Phase 2 — Conditional"]
+        AA["Alignment Agent ★\n(raw image bytes + audio transcript + LP text)"]
+    end
+
+    GATE -- Yes --> AA
+    GATE -- No --> FIX
+
+    subgraph PHASE3["Phase 3 — Synthesis"]
+        FIX["Fix Generation\nAgent"]
+        SCORE["Scoring Engine\n(deterministic)"]
+    end
+
+    AA --> FIX --> SCORE
+
+    OUTPUT["📊 Final Response\n──────────────\ncategory · detected_language\nviolations[] · alignment_violations[]\nadvisories[] · fixes[]\nscore · status\nlp_analysis_status\naudio_analysis_status"]
+
+    SCORE --> OUTPUT
+
+    style PHASE1 fill:#eff6ff,stroke:#3b82f6,stroke-width:1.5px
+    style PHASE2 fill:#fef3c7,stroke:#f59e0b,stroke-width:1.5px
+    style PHASE3 fill:#f0fdf4,stroke:#22c55e,stroke-width:1.5px
+    style INPUT fill:#1a1a2e,color:#fff,stroke:none
+    style OUTPUT fill:#1a1a2e,color:#fff,stroke:none
+    style PREPROCESS fill:#f3f4f6,stroke:#9ca3af
+    style CACHE fill:#fdf4ff,stroke:#a855f7
+    style GATE fill:#fdf4ff,stroke:#a855f7
+    style CACHED fill:#f0fdf4,stroke:#22c55e
+    </div>
+  </div>
+  <p class="diagram-caption">★ = new in v2. Deterministic nodes (Targeting Checker, Scoring Engine) never call an LLM.</p>
+
+  <div class="eng-callout">
+    <strong>Engineering notes (implementation detail, not PM scope):</strong> Global Go channel semaphore protects Gemini RPM limits across concurrent users. Cache TTL = 24h with force_refresh override. In-process vs. shared cache store is an engineering decision based on deployment topology.
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- SECTION 4: AGENT INVENTORY                                  -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+<div class="section">
+  <div class="section-header">
+    <div class="section-num">4</div>
+    <div class="section-title">Agent Inventory — All 10 Agents</div>
+    <div class="section-subtitle">Phase 1: 8 parallel · Phase 2: 1 conditional · Phase 3: 1 always</div>
+  </div>
+  <div class="agent-grid">
+
+    <!-- CATEGORY CLASSIFIER -->
+    <div class="agent-card">
+      <div class="agent-card-header">
+        <div style="flex:1">
+          <div class="agent-name">Category Classifier</div>
+          <div class="agent-desc">Assigns a single product/service category. Every downstream agent uses this — it's the pipeline's routing decision.</div>
+          <div class="agent-badges">
+            <span class="badge badge-llm">LLM</span>
+            <span class="badge badge-det">Phase 1 · goroutine 1</span>
+          </div>
+        </div>
+      </div>
+      <div class="agent-body">
+        <div class="io-label">Input</div>
+        <div class="io-item">ad_copy: string</div>
+        <div class="io-label">Output</div>
+        <div class="io-item">category: string (e.g. "Alcohol", "Gambling", "Cryptocurrency — Exchange")</div>
+        <div class="io-item">confidence: float</div>
+        <div class="io-item">detected_language: string (new in v2)</div>
+      </div>
+      <div class="agent-footer">
+        <strong>Files:</strong> category.go · category_classifier.txt<br/>
+        <strong>Failure:</strong> returns "UNKNOWN" — downstream agents degrade gracefully, do not crash
+      </div>
+    </div>
+
+    <!-- VIOLATIONS AGENT -->
+    <div class="agent-card">
+      <div class="agent-card-header">
+        <div style="flex:1">
+          <div class="agent-name">Violations Agent</div>
+          <div class="agent-desc">Scans ad copy for P_ (Prohibited), R_ (Restricted), M_ (Moderate) violations. Does not check personal attributes or auth requirements — those are dedicated agents.</div>
+          <div class="agent-badges">
+            <span class="badge badge-llm">LLM</span>
+            <span class="badge badge-det">Phase 1 · goroutine 2</span>
+          </div>
+        </div>
+      </div>
+      <div class="agent-body">
+        <div class="io-label">Input</div>
+        <div class="io-item">ad_copy: string</div>
+        <div class="io-item">category: string</div>
+        <div class="io-item">audio_transcript: string (new in v2 — from Audio Agent via context)</div>
+        <div class="io-label">Output</div>
+        <div class="io-item">violations[]: { code, explanation }</div>
+        <div class="io-item">27 codes: 18× P_ · 10× R_ · 6× M_ (see Master Prompt v2)</div>
+      </div>
+      <div class="agent-footer">
+        <strong>Files:</strong> violations.go · violations_agent.txt<br/>
+        <strong>Key codes:</strong> P_MISLEADING_CLAIM · R_BEFORE_AFTER_WEIGHT · M_URGENCY<br/>
+        <strong>Multilingual:</strong> prompt instructs semantic detection regardless of source language
+      </div>
+    </div>
+
+    <!-- AUTH REQUIRED AGENT -->
+    <div class="agent-card">
+      <div class="agent-card-header">
+        <div style="flex:1">
+          <div class="agent-name">Auth Required Agent</div>
+          <div class="agent-desc">Checks whether the ad requires Meta Special Ad Category authorization. Returns the exact authorization path (URL) for each certification needed.</div>
+          <div class="agent-badges">
+            <span class="badge badge-llm">LLM</span>
+            <span class="badge badge-det">Phase 1 · goroutine 3</span>
+          </div>
+        </div>
+      </div>
+      <div class="agent-body">
+        <div class="io-label">Input</div>
+        <div class="io-item">ad_copy: string</div>
+        <div class="io-item">category: string</div>
+        <div class="io-label">Output</div>
+        <div class="io-item">violations[]: { code, explanation, auth_path }</div>
+        <div class="io-item">7 codes: A_GAMBLING · A_ALCOHOL · A_FINANCIAL · A_DATING · A_CBD · A_PRESCRIPTION_DRUGS · A_SIEP</div>
+      </div>
+      <div class="agent-footer">
+        <strong>Files:</strong> auth_required.go · auth_required_agent.txt<br/>
+        <strong>Critical rule:</strong> escort/sugar-baby/mail-order bride = P_ even with authorization, not A_
+      </div>
+    </div>
+
+    <!-- PERSONAL ATTRIBUTE AGENT -->
+    <div class="agent-card">
+      <div class="agent-card-header">
+        <div style="flex:1">
+          <div class="agent-name">Personal Attribute Agent</div>
+          <div class="agent-desc">Meta's most-enforced rule. Dedicated agent for 3 patterns (Direct Assertion, Rhetorical Question, Audience Address) across 6 protected attribute types. Gray zone rule: when in doubt, flag.</div>
+          <div class="agent-badges">
+            <span class="badge badge-llm">LLM</span>
+            <span class="badge badge-det">Phase 1 · goroutine 4</span>
+          </div>
+        </div>
+      </div>
+      <div class="agent-body">
+        <div class="io-label">Input</div>
+        <div class="io-item">ad_copy: string</div>
+        <div class="io-item">audio_transcript: string (new — VO may contain PA violations)</div>
+        <div class="io-label">Output</div>
+        <div class="io-item">violations[]: { code: "P_PERSONAL_ATTRIBUTE", explanation, attribute_type }</div>
+        <div class="io-item">attribute_type: PA-001 health · PA-002 financial · PA-003 religion · PA-004 age · PA-005 sexual orientation · PA-006 race</div>
+      </div>
+      <div class="agent-footer">
+        <strong>Files:</strong> personal_attribute.go · personal_attribute_agent.txt<br/>
+        <strong>Model routing note:</strong> Flash used for v2. If false positive rate is empirically high in testing, upgrade this agent to gemini-1.5-pro (config flag, no code change).
+      </div>
+    </div>
+
+    <!-- VISION AGENT (NEW) -->
+    <div class="agent-card">
+      <div class="agent-card-header">
+        <div style="flex:1">
+          <div class="agent-name">Vision Agent ★ New</div>
+          <div class="agent-desc">Analyzes images or video frames for visual policy violations. Two-part output: first extracts ALL visible text character by character (OCR), then checks for visual violations separately. Multipart Gemini call.</div>
+          <div class="agent-badges">
+            <span class="badge badge-vis">LLM + Vision</span>
+            <span class="badge badge-new">Phase 1 · goroutine 5</span>
+          </div>
+        </div>
+      </div>
+      <div class="agent-body">
+        <div class="io-label">Input</div>
+        <div class="io-item">image_bytes: []byte  — or —  video_frames: [][]byte (scene-change-based, ≤30 frames/clip)</div>
+        <div class="io-item">ad_copy: string (context)</div>
+        <div class="io-item">category: string</div>
+        <div class="io-label">Output (two-part structured JSON)</div>
+        <div class="io-item">Part 1 — extracted_text: string (exact OCR of all text in image/frames)</div>
+        <div class="io-item">Part 2 — violations[]: { code, explanation, frame_index? }</div>
+        <div class="io-item">visual_check_confidence: "high" | "partial" | "low"</div>
+        <div class="io-item">image_bytes stored in request context → passed raw to Alignment Agent</div>
+      </div>
+      <div class="agent-footer">
+        <strong>Files:</strong> vision_agent.go (create) · vision_agent.txt (create)<br/>
+        <strong>Upload:</strong> multipart form-data (not base64 JSON)<br/>
+        <strong>OCR approach:</strong> Two-part prompt forces text extraction before visual scan — avoids skipping small disclaimer text<br/>
+        <strong>Failure:</strong> advisories[] += ADV_VISUAL_PARTIAL · no score penalty
+      </div>
+    </div>
+
+    <!-- AUDIO AGENT (NEW) -->
+    <div class="agent-card">
+      <div class="agent-card-header">
+        <div style="flex:1">
+          <div class="agent-name">Audio Agent ★ New</div>
+          <div class="agent-desc">Transcribes voiceover/audio from video ads. Voiceovers are the #1 place advertisers embed guaranteed-outcome claims and personal attribute assertions that visual review misses.</div>
+          <div class="agent-badges">
+            <span class="badge badge-audio">LLM + Audio</span>
+            <span class="badge badge-new">Phase 1 · goroutine 6</span>
+          </div>
+        </div>
+      </div>
+      <div class="agent-body">
+        <div class="io-label">Input</div>
+        <div class="io-item">audio_bytes: []byte (.mp3 extracted by ffmpeg from video)</div>
+        <div class="io-item">Only runs if video input is present</div>
+        <div class="io-label">Output</div>
+        <div class="io-item">audio_transcript: string (stored in request context)</div>
+        <div class="io-item">audio_analysis_status: "transcribed" | "no_audio_track" | "failed" | "not_provided"</div>
+      </div>
+      <div class="agent-footer">
+        <strong>Files:</strong> audio_agent.go (create) · audio_agent.txt (create)<br/>
+        <strong>Why separate from Vision Agent:</strong> Different input type, different failure mode, independent testability. Merging into Vision would make prompt + output schema complex.<br/>
+        <strong>Transcript is passed to:</strong> Violations Agent, Personal Attribute Agent, Alignment Agent<br/>
+        <strong>Failure:</strong> advisories[] += ADV_AUDIO_NOT_CHECKED · no score penalty
+      </div>
+    </div>
+
+    <!-- LP AGENT (NEW) -->
+    <div class="agent-card">
+      <div class="agent-card-header">
+        <div style="flex:1">
+          <div class="agent-name">LP Agent ★ New</div>
+          <div class="agent-desc">Fetches and analyzes the landing page. Uses Firecrawl API (not net/http) to handle JS-rendered SPAs, Cloudflare walls, and tracking redirect chains — the majority of agency LP stacks.</div>
+          <div class="agent-badges">
+            <span class="badge badge-new">HTTP + LLM</span>
+            <span class="badge badge-new">Phase 1 · goroutine 7</span>
+          </div>
+        </div>
+      </div>
+      <div class="agent-body">
+        <div class="io-label">Input</div>
+        <div class="io-item">lp_url: string</div>
+        <div class="io-item">category: string</div>
+        <div class="io-item">ad_copy: string (context for comparison)</div>
+        <div class="io-label">Output</div>
+        <div class="io-item">lp_violations[]: { code, explanation } — prohibited content found on LP</div>
+        <div class="io-item">lp_text_excerpt: first 2000 chars + last 1000 chars + &lt;title&gt;, &lt;meta desc&gt;, all &lt;h1&gt;/&lt;h2&gt; tags</div>
+        <div class="io-item">key_claims[]: string[] — claims extracted for Alignment Agent</div>
+        <div class="io-item">lp_analysis_status: "fetched" | "failed_timeout" | "failed_js_rendered" | "not_provided"</div>
+      </div>
+      <div class="agent-footer">
+        <strong>Files:</strong> lp_agent.go (create) · lp_agent.txt (create)<br/>
+        <strong>Why Firecrawl vs net/http:</strong> ~80-90% of agency LPs (Shopify headless, ClickFunnels, Unbounce) are JS-rendered. Plain HTTP GET returns blank body. Agencies will stop trusting the tool if LP check fails constantly.<br/>
+        <strong>Timeout:</strong> 8 seconds (not 3)<br/>
+        <strong>Future:</strong> migrate to self-hosted Playwright for cost control
+      </div>
+    </div>
+
+    <!-- TARGETING CHECKER (NEW) -->
+    <div class="agent-card">
+      <div class="agent-card-header">
+        <div style="flex:1">
+          <div class="agent-name">Targeting Checker ★ New</div>
+          <div class="agent-desc">Pure deterministic Go. No LLM. Compares age_min and countries[] against category-specific rules. Runs in &lt;1ms. Produces hard violations when rules are broken, advisories when data is missing.</div>
+          <div class="agent-badges">
+            <span class="badge badge-det">Deterministic Go</span>
+            <span class="badge badge-new">Phase 1 · goroutine 8</span>
+          </div>
+        </div>
+      </div>
+      <div class="agent-body">
+        <div class="io-label">Input</div>
+        <div class="io-item">category: string</div>
+        <div class="io-item">age_min: int (-1 = not provided)</div>
+        <div class="io-item">countries: []string (empty = not provided)</div>
+        <div class="io-label">Output</div>
+        <div class="io-item">targeting_violations[]: { code, explanation } — hard breaches</div>
+        <div class="io-item">advisories[]: { code, message, category } — data missing for restricted category</div>
+        <div class="io-label">Advisory escalation rules</div>
+        <div class="io-item">Age escalation (7 categories): Alcohol, Gambling, Online Pharmacies, Tobacco, Cannabis, Dating, Sexual Wellness — missing age_min → advisory upgrades to soft violation when copy contains explicit category signals</div>
+        <div class="io-item">Geo advisory only (4 categories): Online Gambling, CBD, Crypto Exchange, Firearms Accessories</div>
+      </div>
+      <div class="agent-footer">
+        <strong>File:</strong> targeting_checker.go (create)<br/>
+        <strong>Hard breach example:</strong> category=Gambling + age_min=16 → R_TARGETING_AGE_BREACH (violation, not advisory)<br/>
+        <strong>Advisory example:</strong> category=Alcohol + age_min=-1 → ADV_MISSING_AGE_TARGETING
+      </div>
+    </div>
+
+    <!-- ALIGNMENT AGENT (NEW, PHASE 2) -->
+    <div class="agent-card">
+      <div class="agent-card-header">
+        <div style="flex:1">
+          <div class="agent-name">Alignment Agent ★ New — Phase 2</div>
+          <div class="agent-desc">Checks cross-source consistency. Detects direct contradictions between ad copy, visual, audio, and LP — not natural variation. Only runs when 2+ sources are present.</div>
+          <div class="agent-badges">
+            <span class="badge badge-p2">Phase 2 — Conditional</span>
+            <span class="badge badge-vis">LLM + Vision</span>
+          </div>
+        </div>
+      </div>
+      <div class="agent-body">
+        <div class="io-label">Input — raw sources, not summaries</div>
+        <div class="io-item">ad_copy: string</div>
+        <div class="io-item">image_bytes: []byte — raw image from request context (NOT a description — avoids "game of telephone" lossy summary)</div>
+        <div class="io-item">audio_transcript: string (from Audio Agent via context)</div>
+        <div class="io-item">lp_text_excerpt: string + key_claims[] (from LP Agent via context)</div>
+        <div class="io-item">existing_violation_codes: []string (to avoid double-flagging)</div>
+        <div class="io-label">Output</div>
+        <div class="io-item">alignment_violations[]: { code, explanation, source_a, source_b }</div>
+        <div class="io-item">4 codes: ALIGN_PRODUCT_MISMATCH · ALIGN_CLAIM_MISMATCH · ALIGN_PRICE_MISMATCH · ALIGN_VISUAL_COPY_MISMATCH</div>
+        <div class="io-label">NOT a violation — examples</div>
+        <div class="io-item">Copy shorter than LP (normal) · Same product in different colors · Price range that includes stated price</div>
+      </div>
+      <div class="agent-footer">
+        <strong>Files:</strong> alignment_agent.go (create) · alignment_agent.txt (create)<br/>
+        <strong>Trigger:</strong> 2+ of: ad_copy, image_bytes, audio_transcript, lp_text present after Phase 1<br/>
+        <strong>Scoring:</strong> ALIGN_ codes → M_ tier (Rule 4) — serious but not structural category violation<br/>
+        <strong>Failure:</strong> skip gracefully — no advisory raised
+      </div>
+    </div>
+
+    <!-- FIX GENERATION AGENT -->
+    <div class="agent-card">
+      <div class="agent-card-header">
+        <div style="flex:1">
+          <div class="agent-name">Fix Generation Agent</div>
+          <div class="agent-desc">Generates actionable remediation per violation. P_ = state prohibition clearly. A_ = explain auth path, link Meta resources. R_/M_ = concrete rewrite (original phrase → replacement).</div>
+          <div class="agent-badges">
+            <span class="badge badge-llm">LLM</span>
+            <span class="badge badge-det">Phase 3 · always runs</span>
+          </div>
+        </div>
+      </div>
+      <div class="agent-body">
+        <div class="io-label">Input</div>
+        <div class="io-item">ad_copy: string</div>
+        <div class="io-item">all_violations[]: merged from Phase 1 + Phase 2</div>
+        <div class="io-item">category: string</div>
+        <div class="io-label">Output</div>
+        <div class="io-item">fixes[]: { violation_code, fix_type, explanation, rewritten_copy? }</div>
+        <div class="io-label">v3 planned enhancement</div>
+        <div class="io-item">Multiple tone variants: compliance_safe · marketing_persuasive · brand_matched</div>
+      </div>
+      <div class="agent-footer">
+        <strong>Files:</strong> fix_generation.go · fix_generation_agent.txt<br/>
+        <strong>Failure:</strong> returns empty fixes[] — violations still shown, fix section shows "unavailable"
+      </div>
+    </div>
+
+    <!-- SCORING ENGINE -->
+    <div class="agent-card">
+      <div class="agent-card-header">
+        <div style="flex:1">
+          <div class="agent-name">Scoring Engine</div>
+          <div class="agent-desc">Deterministic waterfall. No LLM. Same input always produces the same score — no variance. Reads all violation codes and applies 6-rule cascade.</div>
+          <div class="agent-badges">
+            <span class="badge badge-det">Deterministic Go</span>
+            <span class="badge badge-det">Phase 3 · always runs</span>
+          </div>
+        </div>
+      </div>
+      <div class="agent-body">
+        <div class="io-label">Input</div>
+        <div class="io-item">all_violations[]: merged codes from all agents</div>
+        <div class="io-item">category: string</div>
+        <div class="io-item">is_authorized: bool</div>
+        <div class="io-label">Output</div>
+        <div class="io-item">score: int (0–100)</div>
+        <div class="io-item">status: "PROHIBITED" | "AUTH_REQUIRED" | "RESTRICTED" | "MODERATE" | "ALLOWED" | "ALLOWED_AUTHORIZED"</div>
+        <div class="io-label">Scoring rule</div>
+        <div class="io-item">Advisories[] do NOT affect score — separate output, shown distinctly in UI</div>
+      </div>
+      <div class="agent-footer">
+        <strong>File:</strong> scoring_engine.go (extract from existing orchestrator logic)<br/>
+        <strong>ALIGN_ codes:</strong> fall into M_ tier (Rule 4) — misleading risk, not structural category violation
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- SECTION 5: SCORING WATERFALL                                -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+<div class="section">
+  <div class="section-header">
+    <div class="section-num">5</div>
+    <div class="section-title">Scoring Waterfall</div>
+  </div>
+  <div class="diagram-wrap">
+    <div class="mermaid">
+flowchart TD
+    R1{"Any P_ violation?"}
+    R2{"Any A_ violation\nAND NOT authorized?"}
+    R3{"Any R_ violation\nOR targeting breach?"}
+    R4{"Any M_ violation\nOR any ALIGN_ violation?"}
+    R5{"No violations?"}
+    R6{"is_authorized = true?"}
+
+    OUT_P["🔴 PROHIBITED\nscore = 0\nNo fix will help. State prohibition."]
+    OUT_A["🔴 AUTH_REQUIRED\nscore = 0\nShow authorization path."]
+    OUT_R["🟠 RESTRICTED\nscore 1–50\nFix required before launch."]
+    OUT_M["🟡 MODERATE\nscore 45–75\nFix recommended. Risk of rejection."]
+    OUT_OK["🟢 ALLOWED\nscore 76–100\nClear to launch."]
+    OUT_AUTH["🔵 ALLOWED (Authorized)\nscore 76–100\nClear — authorization verified."]
+
+    R1 -- Yes --> OUT_P
+    R1 -- No --> R2
+    R2 -- Yes --> OUT_A
+    R2 -- No --> R3
+    R3 -- Yes --> OUT_R
+    R3 -- No --> R4
+    R4 -- Yes --> OUT_M
+    R4 -- No --> R5
+    R5 -- Yes --> R6
+    R5 -- No --> OUT_M
+    R6 -- No --> OUT_OK
+    R6 -- Yes --> OUT_AUTH
+
+    style OUT_P fill:#fef2f2,stroke:#dc2626,color:#991b1b
+    style OUT_A fill:#fef2f2,stroke:#dc2626,color:#991b1b
+    style OUT_R fill:#fff7ed,stroke:#ea580c,color:#9a3412
+    style OUT_M fill:#fefce8,stroke:#ca8a04,color:#854d0e
+    style OUT_OK fill:#f0fdf4,stroke:#16a34a,color:#166534
+    style OUT_AUTH fill:#eff6ff,stroke:#2563eb,color:#1e40af
+    </div>
+  </div>
+  <p class="diagram-caption">Advisories[] are separate output — they do not enter this waterfall and do not affect score.</p>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- SECTION 6: ADVISORY SYSTEM + UI DESIGN                     -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+<div class="section">
+  <div class="section-header">
+    <div class="section-num">6</div>
+    <div class="section-title">Advisory System — What It Is &amp; How It Renders</div>
+  </div>
+  <p style="font-size:13px;color:#374151;margin-bottom:20px;line-height:1.7">Advisories are soft signals — things the system couldn't fully verify because data was missing or a check failed. They do not affect the compliance score. They render below the violations section, visually distinct. The goal: surface risk without punishing the advertiser for incomplete inputs.</p>
+
+  <div class="advisory-demo">
+    <div class="advisory-demo-header">Results — Step 4 (UI mockup)</div>
+    <div class="advisory-demo-body">
+
+      <div class="advisory-card-demo advisory-violation">
+        <div class="advisory-top">
+          <span class="advisory-badge av-badge">VIOLATION · P_MISLEADING_CLAIM</span>
+        </div>
+        <div class="advisory-title">Guaranteed outcome claim</div>
+        <div class="advisory-body">"Lose 10kg in 30 days guaranteed" — guaranteed outcome claims are prohibited under Meta Policy §8. Score: 0.</div>
+        <span class="advisory-action">↓ See fix suggestion</span>
+      </div>
+
+      <div style="height:1px;background:#f3f4f6"></div>
+      <div style="font-size:11px;color:#9ca3af;padding:4px 0;font-style:italic">Review recommended — does not affect compliance score</div>
+
+      <div class="advisory-card-demo advisory-warn">
+        <div class="advisory-top">
+          <span class="advisory-badge aw-badge">REVIEW · AGE TARGETING UNVERIFIED</span>
+        </div>
+        <div class="advisory-title">This category requires 18+ targeting</div>
+        <div class="advisory-body">Alcohol ads require a minimum age of 18 in most countries. No age targeting data was provided — confirm your campaign is set to 18+ in Meta Ads Manager.</div>
+        <span class="advisory-action">↓ How to set age targeting in Meta</span>
+      </div>
+
+      <div class="advisory-card-demo advisory-warn">
+        <div class="advisory-top">
+          <span class="advisory-badge aw-badge">REVIEW · LANDING PAGE NOT CHECKED</span>
+        </div>
+        <div class="advisory-title">Landing page could not be fetched</div>
+        <div class="advisory-body">The landing page returned a JS-rendered page that could not be fully analyzed. Prohibited content or mismatched claims on the LP can still cause ad rejection. Manual review recommended.</div>
+        <span class="advisory-action">↓ What to check manually</span>
+      </div>
+
+      <div class="advisory-card-demo advisory-info">
+        <div class="advisory-top">
+          <span class="advisory-badge ai-badge">INFO · AUDIO NOT CHECKED</span>
+        </div>
+        <div class="advisory-title">No audio track found in video</div>
+        <div class="advisory-body">The uploaded video has no audio track. If you add a voiceover before launch, re-run the compliance check to verify the script.</div>
+      </div>
+
+    </div>
+  </div>
+
+  <div style="margin-top:16px">
+    <div class="decision-row">
+      <div class="decision-box">
+        <div class="decision-label">Advisory codes — targeting</div>
+        <div class="decision-value">ADV_MISSING_AGE_TARGETING<br/>ADV_MISSING_GEO_TARGETING<br/>ADV_AGE_TARGETING_BREACH (escalates to soft violation)</div>
+      </div>
+      <div class="decision-box">
+        <div class="decision-label">Advisory codes — LP</div>
+        <div class="decision-value">ADV_LP_NOT_PROVIDED<br/>ADV_LP_FETCH_FAILED<br/>ADV_LP_JS_RENDERED</div>
+      </div>
+      <div class="decision-box">
+        <div class="decision-label">Advisory codes — media</div>
+        <div class="decision-value">ADV_VISUAL_PARTIAL<br/>ADV_AUDIO_NOT_CHECKED<br/>ADV_VIDEO_LONG_CLIP</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- SECTION 7: API CONTRACT DELTA (v1 → v2)                    -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+<div class="section">
+  <div class="section-header">
+    <div class="section-num">7</div>
+    <div class="section-title">API Contract — What Changes from v1 to v2</div>
+  </div>
+  <table>
+    <thead><tr><th>Field</th><th>Direction</th><th>Type</th><th>Status</th><th>Notes</th></tr></thead>
+    <tbody>
+      <tr><td><code>ad_copy</code></td><td>Request</td><td>string</td><td>Existing</td><td>Unchanged</td></tr>
+      <tr><td><code>image</code></td><td>Request</td><td>file (multipart)</td><td>New v2</td><td>Optional. PNG/JPG/WEBP</td></tr>
+      <tr><td><code>video</code></td><td>Request</td><td>file (multipart)</td><td>New v2</td><td>Optional. MP4/MOV. Max duration TBD (engineering). Frames + audio extracted server-side.</td></tr>
+      <tr><td><code>lp_url</code></td><td>Request</td><td>string</td><td>New v2</td><td>Optional. Fetched via Firecrawl (8s timeout).</td></tr>
+      <tr><td><code>age_min</code></td><td>Request</td><td>int</td><td>New v2</td><td>Optional. -1 = not provided. Used by Targeting Checker.</td></tr>
+      <tr><td><code>countries</code></td><td>Request</td><td>[]string (ISO codes)</td><td>New v2</td><td>Optional. Frontend resolves region names to ISO codes before API call.</td></tr>
+      <tr><td><code>force_refresh</code></td><td>Request</td><td>bool</td><td>New v2</td><td>Default false. Bypasses cache. User-triggered re-check.</td></tr>
+      <tr><td><code>category</code></td><td>Response</td><td>string</td><td>Existing</td><td>Unchanged</td></tr>
+      <tr><td><code>detected_language</code></td><td>Response</td><td>string</td><td>New v2</td><td>ISO language code (e.g. "tr", "es", "th"). From Category Classifier.</td></tr>
+      <tr><td><code>violations</code></td><td>Response</td><td>[]Violation</td><td>Extended</td><td>Now includes attribute_type (PA agent) and auth_path (A_ codes)</td></tr>
+      <tr><td><code>alignment_violations</code></td><td>Response</td><td>[]Violation</td><td>New v2</td><td>ALIGN_* codes from Alignment Agent. Separate from violations[].</td></tr>
+      <tr><td><code>advisories</code></td><td>Response</td><td>[]Advisory</td><td>New v2</td><td>Does not affect score. Shown distinctly in UI.</td></tr>
+      <tr><td><code>lp_analysis_status</code></td><td>Response</td><td>string</td><td>New v2</td><td>"fetched" | "failed_timeout" | "failed_js_rendered" | "not_provided"</td></tr>
+      <tr><td><code>audio_analysis_status</code></td><td>Response</td><td>string</td><td>New v2</td><td>"transcribed" | "no_audio_track" | "failed" | "not_provided"</td></tr>
+      <tr><td><code>score</code></td><td>Response</td><td>int (0–100)</td><td>Existing</td><td>Unchanged logic. Advisories do not affect score.</td></tr>
+      <tr><td><code>status</code></td><td>Response</td><td>string</td><td>Existing</td><td>Unchanged</td></tr>
+      <tr><td><code>fixes</code></td><td>Response</td><td>[]Fix</td><td>Existing</td><td>Extended to cover 27+ codes + ALIGN_ codes</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- SECTION 8: TECH STACK                                       -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+<div class="section">
+  <div class="section-header">
+    <div class="section-num">8</div>
+    <div class="section-title">Tech Stack</div>
+  </div>
+  <table>
+    <thead><tr><th>Layer</th><th>Technology</th><th>Decision &amp; Rationale</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><strong>LLM</strong></td>
+        <td><code>gemini-flash-latest</code></td>
+        <td>Single model for all LLM agents in v2. Fast, cheap, multimodal, structured output via ResponseSchema. Model routing config flag per agent is built-in — upgrade individual agents to Pro if empirical false-positive rates justify it. No cross-vendor mixing in v2.</td>
+      </tr>
+      <tr>
+        <td><strong>Vision + Audio</strong></td>
+        <td>Gemini multipart</td>
+        <td>Same model — handles image bytes and audio natively. No additional vendor. Vision Agent: image bytes as genai.Blob. Audio Agent: .mp3 bytes from ffmpeg as genai.Blob.</td>
+      </tr>
+      <tr>
+        <td><strong>Video pre-processing</strong></td>
+        <td>ffmpeg via <code>exec.Command</code></td>
+        <td>Server-side. Extracts: (1) video frames — scene-change-based, ≤30 per clip; (2) audio track as .mp3. Both in memory — no orphaned temp files.</td>
+      </tr>
+      <tr>
+        <td><strong>LP fetch</strong></td>
+        <td>Firecrawl API</td>
+        <td>Handles JS-SPAs, Cloudflare, tracking redirects. ~80-90% of agency LP stacks are JS-rendered — net/http fails on most of them. 8s timeout. Migration to self-hosted Playwright planned for cost control.</td>
+      </tr>
+      <tr>
+        <td><strong>File upload</strong></td>
+        <td>Multipart form-data</td>
+        <td>Replaces JSON-only handler. Required for image/video file uploads. Native Go support.</td>
+      </tr>
+      <tr>
+        <td><strong>Concurrency</strong></td>
+        <td>Go goroutines + <code>sync.WaitGroup</code></td>
+        <td>8 Phase 1 agents run in parallel. Fault-tolerant — individual agent errors are captured per-goroutine, do not crash the pipeline.</td>
+      </tr>
+      <tr>
+        <td><strong>Deterministic logic</strong></td>
+        <td>Pure Go functions</td>
+        <td>Targeting Checker + Scoring Engine. Zero LLM variance. Same input = same output, always.</td>
+      </tr>
+      <tr>
+        <td><strong>Backend</strong></td>
+        <td>Go + Encore.dev + GCP</td>
+        <td>Existing stack. No infrastructure changes for v2.</td>
+      </tr>
+      <tr>
+        <td><strong>Frontend</strong></td>
+        <td>Vue 3 + TypeScript + Vite + Tailwind v4</td>
+        <td>New components: AdvisoryPanel.vue · file upload fields in Step 2 · targeting input (age + country selector)</td>
+      </tr>
+      <tr>
+        <td><strong>Meta API (v3)</strong></td>
+        <td>Rockads existing integration</td>
+        <td>Apply Fix uses the Meta Marketing API already integrated in the Rockads core platform. No new API client needed — compliance checker returns suggested_copy, UI calls existing Rockads Meta endpoint to push as new ad draft.</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- SECTION 9: IMPROVEMENTS vs v1                               -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+<div class="section">
+  <div class="section-header">
+    <div class="section-num">9</div>
+    <div class="section-title">What v2 Adds over v1</div>
+  </div>
+  <div class="card-row">
+    <div class="info-card improve">
+      <h3>Coverage gaps closed</h3>
+      <ul>
+        <li><span class="icon">👁</span><strong>Visual violations detected:</strong> v1 was copy-only — blind to images and video.</li>
+        <li><span class="icon">🎙</span><strong>Audio/voiceover analyzed:</strong> #1 source of hidden guaranteed-outcome and personal attribute claims. Completely missed in v1.</li>
+        <li><span class="icon">🔗</span><strong>Landing page scanned:</strong> v1 ignored what the user lands on. LP can contain prohibited content that causes rejection even if copy is clean.</li>
+        <li><span class="icon">⚖️</span><strong>Cross-source alignment:</strong> v1 had no concept of copy ↔ visual ↔ LP consistency. Alignment Agent closes this.</li>
+        <li><span class="icon">🎯</span><strong>Targeting validation:</strong> v1 had zero targeting awareness. Agencies can now get age/geo compliance checks.</li>
+        <li><span class="icon">📋</span><strong>27 violation codes vs ~15:</strong> Full Meta policy coverage including crisis exploitation, misinformation, vaccine discouragement, skin whitening, and more.</li>
+        <li><span class="icon">🌍</span><strong>Multilingual:</strong> v1 relied on English keyword patterns. v2 agents detect semantically equivalent violations in any language.</li>
+      </ul>
+    </div>
+    <div class="info-card improve">
+      <h3>Architecture improvements</h3>
+      <ul>
+        <li><span class="icon">🏗</span><strong>8 agents, each single-responsibility:</strong> Audio and Vision are separate; Personal Attribute is separate from Violations. Easier to test, improve, and swap individually.</li>
+        <li><span class="icon">⚡</span><strong>True parallel Phase 1:</strong> 8 goroutines. Slowest agent determines phase time — not the sum.</li>
+        <li><span class="icon">🔀</span><strong>Conditional Phase 2:</strong> Alignment Agent only runs when relevant. No wasted LLM call for copy-only checks.</li>
+        <li><span class="icon">🛡</span><strong>Fault isolation:</strong> One agent failing = partial result, not 500 error.</li>
+        <li><span class="icon">📊</span><strong>Deterministic scoring + targeting:</strong> Zero LLM variance in the final verdict.</li>
+        <li><span class="icon">🔒</span><strong>Structured output enforced:</strong> ResponseSchema on every LLM agent — no free-text hallucinations in JSON fields.</li>
+        <li><span class="icon">📸</span><strong>Raw image to Alignment Agent:</strong> Image bytes passed via request context — not a lossy text description. No "game of telephone."</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- SECTION 10: KNOWN CONCERNS & RISKS                          -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+<div class="section">
+  <div class="section-header">
+    <div class="section-num">10</div>
+    <div class="section-title">Known Concerns &amp; Risks</div>
+  </div>
+  <div class="card-row">
+    <div class="info-card concern">
+      <h3>Technical risks</h3>
+      <ul>
+        <li><span class="icon">⏱</span><strong>Latency:</strong> 8 parallel goroutines, but Vision + Audio + LP are slowest (file bytes + HTTP). Target P99 under 10 seconds. Needs benchmarking — not assumed.</li>
+        <li><span class="icon">🎥</span><strong>Video frame sampling:</strong> Scene-change extraction is heuristic. Short scenes (&lt;1s cuts in fast-editing ads) may be missed. Empirical tuning needed — frame count is currently "≤30" but this is a starting point.</li>
+        <li><span class="icon">🌐</span><strong>JS-rendered LPs:</strong> Firecrawl handles most cases. But some LP stacks (paywall-gated, cookie-consent-blocked, login-required) will still fail. Advisory always shown when LP fetch fails.</li>
+        <li><span class="icon">💾</span><strong>Large video memory:</strong> Frame extraction + audio bytes in-memory for long clips. Need max-duration guard. Engineering decision on limit.</li>
+        <li><span class="icon">🏷</span><strong>Logo/celebrity detection:</strong> Gemini Vision unreliable for non-major brand logos and faces. Copyright/endorsement violations remain best-effort. UI must label detection confidence explicitly.</li>
+      </ul>
+    </div>
+    <div class="info-card concern">
+      <h3>Product / accuracy risks</h3>
+      <ul>
+        <li><span class="icon">🔀</span><strong>Alignment false positives:</strong> Natural variation between copy and LP (copy is always shorter, more persuasive) could fire ALIGN_ incorrectly if prompt examples aren't precise enough. Prompt requires extensive NOT-a-violation examples and controlled testing before launch.</li>
+        <li><span class="icon">❓</span><strong>Advisory fatigue:</strong> Too many advisories = users ignore all of them. Must limit surface area — only raise when category is explicitly restricted AND the specific input type was expected.</li>
+        <li><span class="icon">📋</span><strong>Policy drift:</strong> Meta updates ad policies frequently. Prompt files are static — they will go stale without a review process. Quarterly minimum recommended.</li>
+        <li><span class="icon">🧠</span><strong>Personal Attribute false positives:</strong> "Are you looking for a gym?" should NOT flag PA-004 (age). Flash is capable but borderline cases need a labeled test set to measure before shipping. Model upgrade path (gemini-1.5-pro) is available via config flag if needed.</li>
+        <li><span class="icon">📉</span><strong>Score gaming:</strong> Deterministic scoring is transparent. Sophisticated users will learn to write M_ instead of R_ by minor wording changes. Unavoidable — monitor in production.</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- SECTION 11: DATA FLOW SEQUENCE                              -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+<div class="section">
+  <div class="section-header">
+    <div class="section-num">11</div>
+    <div class="section-title">Data Flow — Request to Response</div>
+  </div>
+  <div class="diagram-wrap">
+    <div class="mermaid">
+sequenceDiagram
+    participant U as User / Frontend
+    participant H as API Handler
+    participant PP as Pre-Processor
+    participant P1 as Phase 1 (8 goroutines)
+    participant AA as Alignment Agent
+    participant FG as Fix Generation
+    participant SE as Scoring Engine
+
+    U->>H: POST /check (multipart: copy, image?, video?, lp_url?, age_min?, countries?, force_refresh?)
+    H->>H: Check SHA-256 cache (skip if hit and force_refresh=false)
+    H->>PP: Parse multipart inputs
+    PP->>PP: ffmpeg → video frames ≤30
+    PP->>PP: ffmpeg → audio .mp3
+    PP->>PP: Firecrawl → LP HTML (8s timeout)
+    PP->>P1: Normalized request context
+
+    par goroutine 1
+        P1->>P1: Category Classifier → category, detected_language
+    and goroutine 2
+        P1->>P1: Violations Agent → violations[]
+    and goroutine 3
+        P1->>P1: Auth Required Agent → violations[], auth_paths
+    and goroutine 4
+        P1->>P1: Personal Attribute Agent → violations[]
+    and goroutine 5
+        P1->>P1: Vision Agent → extracted_text, violations[], image_bytes→context
+    and goroutine 6
+        P1->>P1: Audio Agent → audio_transcript→context, status
+    and goroutine 7
+        P1->>P1: LP Agent → lp_violations[], lp_text, key_claims, status
+    and goroutine 8
+        P1->>P1: Targeting Checker → targeting_violations[], advisories[]
+    end
+
+    P1->>AA: { copy, image_bytes (raw), audio_transcript, lp_text, key_claims, all_violation_codes[] }
+    Note over AA: Only runs if 2+ sources present
+    AA->>FG: alignment_violations[]
+
+    FG->>FG: Merge all violations (Phase 1 + alignment)
+    FG->>SE: merged_violations[], category, is_authorized
+    SE->>H: Score + status
+    H->>H: Store in cache (TTL 24h)
+    H->>U: Full JSON response
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- SECTION 12: FILES TO CREATE / MODIFY                        -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+<div class="section">
+  <div class="section-header">
+    <div class="section-num">12</div>
+    <div class="section-title">Implementation — Files to Create &amp; Modify</div>
+    <div class="section-subtitle">Correct build order: models → orchestrator → pre-processor + agents (parallel)</div>
+  </div>
+  <table>
+    <thead><tr><th>File</th><th>Action</th><th>What changes</th></tr></thead>
+    <tbody>
+      <tr><td><code>backend/models/request.go</code></td><td>Modify</td><td>Add: image, video (multipart), lp_url, age_min, countries[], force_refresh</td></tr>
+      <tr><td><code>backend/models/response.go</code></td><td>Modify</td><td>Add: alignment_violations[], advisories[], lp_analysis_status, audio_analysis_status, detected_language. Extend Violation struct with auth_path, attribute_type.</td></tr>
+      <tr><td><code>backend/internal/orchestrator.go</code></td><td>Modify / create</td><td>8-goroutine WaitGroup, semaphore, cache logic, Phase 2 conditional trigger, result merge</td></tr>
+      <tr><td><code>backend/internal/targeting_checker.go</code></td><td>Create</td><td>Deterministic Go function. No LLM. Category → age/geo rules lookup.</td></tr>
+      <tr><td><code>backend/internal/scoring_engine.go</code></td><td>Extract + modify</td><td>Extract scoring waterfall from existing code. Add ALIGN_ → M_ tier rule.</td></tr>
+      <tr><td><code>backend/internal/preprocessor.go</code></td><td>Create</td><td>ffmpeg frame extraction, ffmpeg audio extraction, Firecrawl LP fetch, multipart parser</td></tr>
+      <tr><td><code>backend/internal/agents/vision_agent.go</code></td><td>Create</td><td>Gemini multipart call. Two-part structured output. Stores image_bytes in context.</td></tr>
+      <tr><td><code>backend/internal/agents/audio_agent.go</code></td><td>Create</td><td>Gemini audio call. Outputs transcript to context. Status field.</td></tr>
+      <tr><td><code>backend/internal/agents/lp_agent.go</code></td><td>Create</td><td>Firecrawl API call. Extract text slices + tags. Output key_claims[].</td></tr>
+      <tr><td><code>backend/internal/agents/alignment_agent.go</code></td><td>Create</td><td>Gemini multipart call with raw image bytes. Conditional trigger. ALIGN_ codes.</td></tr>
+      <tr><td><code>backend/internal/agents/violations.go</code></td><td>Modify</td><td>Add audio_transcript to input. Multilingual instruction already in prompt.</td></tr>
+      <tr><td><code>backend/internal/agents/personal_attribute.go</code></td><td>Modify</td><td>Add audio_transcript to input. Add attribute_type to output schema.</td></tr>
+      <tr><td><code>backend/internal/agents/client.go</code></td><td>Modify</td><td>Add multipart support. Add model routing config flag per agent.</td></tr>
+      <tr><td><code>backend/prompts/vision_agent.txt</code></td><td>Create</td><td>Two-part prompt: OCR pass first, violation scan second.</td></tr>
+      <tr><td><code>backend/prompts/audio_agent.txt</code></td><td>Create</td><td>Transcription + language detection instructions.</td></tr>
+      <tr><td><code>backend/prompts/lp_agent.txt</code></td><td>Create</td><td>LP content analysis, key claim extraction instructions.</td></tr>
+      <tr><td><code>backend/prompts/alignment_agent.txt</code></td><td>Create</td><td>Cross-source consistency check. Extensive NOT-a-violation examples.</td></tr>
+      <tr><td><code>backend/api/handler.go</code></td><td>Modify</td><td>Accept multipart form-data. Parse new request fields. Wire pre-processor.</td></tr>
+      <tr><td><code>src/components/AdvisoryPanel.vue</code></td><td>Create</td><td>Advisory display component. Amber/yellow visual treatment. Distinct from violations.</td></tr>
+      <tr><td><code>src/views/Step2Input.vue</code></td><td>Modify</td><td>Add file upload (image/video), LP URL field, age + country targeting inputs.</td></tr>
+      <tr><td><code>src/views/Step4Results.vue</code></td><td>Modify</td><td>Render alignment_violations[], advisories[], lp_analysis_status, audio_analysis_status.</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<script>
+  mermaid.initialize({
+    startOnLoad: true,
+    theme: 'default',
+    themeVariables: {
+      fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+      fontSize: '13px'
+    },
+    flowchart: { curve: 'basis', useMaxWidth: true },
+    sequence: { useMaxWidth: true }
+  });
+</script>
+</body>
+</html>

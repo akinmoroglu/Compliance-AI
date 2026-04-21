@@ -1,0 +1,17 @@
+version: '3.9'
+services:
+  postgres:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: compliance_checker
+      POSTGRES_USER: dev
+      POSTGRES_PASSWORD: dev
+    ports:
+      - "5432:5432"
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+
+# Note: ffmpeg is a system binary, not a Go package. 
+# For local development, install via homebrew/apt-get on the host machine.
+volumes:
+  pg_data:

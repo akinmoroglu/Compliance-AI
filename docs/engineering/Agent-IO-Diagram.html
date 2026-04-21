@@ -1,0 +1,682 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Compliance AI — Agent Input / Output Diagram</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/mermaid/10.6.1/mermaid.min.js"></script>
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f4f5f7;color:#1a1a2e;padding:32px;max-width:1400px;margin:0 auto}
+    h1{font-size:22px;font-weight:800;margin-bottom:4px}
+    .subtitle{font-size:13px;color:#6b7280;margin-bottom:40px}
+
+    /* Section */
+    .section{margin-bottom:56px}
+    .section-header{display:flex;align-items:center;gap:10px;margin-bottom:20px;padding-bottom:12px;border-bottom:2px solid #e5e7eb}
+    .section-num{width:28px;height:28px;background:#1a1a2e;color:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0}
+    .section-title{font-size:17px;font-weight:700}
+    .section-note{font-size:12px;color:#6b7280;margin-left:auto}
+
+    /* Diagram wrap */
+    .diagram-wrap{background:#fff;border-radius:12px;padding:28px;border:1px solid #e5e7eb;overflow-x:auto}
+    .diagram-caption{font-size:12px;color:#9ca3af;text-align:center;margin-top:10px;font-style:italic}
+
+    /* Agent IO table */
+    .io-table{width:100%;border-collapse:collapse;background:#fff;border-radius:12px;overflow:hidden;border:1px solid #e5e7eb}
+    .io-table th{padding:11px 16px;font-size:11px;font-weight:700;text-align:left;text-transform:uppercase;letter-spacing:.04em;background:#1a1a2e;color:#fff}
+    .io-table td{padding:12px 16px;font-size:12px;color:#374151;border-bottom:1px solid #f3f4f6;vertical-align:top;line-height:1.6}
+    .io-table tr:last-child td{border-bottom:none}
+    .io-table tr.phase-row td{background:#f9fafb;font-weight:700;font-size:12px;color:#1a1a2e;padding:8px 16px;border-bottom:1px solid #e5e7eb}
+
+    code{background:#f3f4f6;padding:2px 5px;border-radius:4px;font-family:'SF Mono','Fira Code',monospace;font-size:11px;color:#374151}
+    .field-list{display:flex;flex-direction:column;gap:4px}
+    .field{display:flex;align-items:flex-start;gap:6px}
+    .field-name{font-weight:700;color:#1a1a2e;white-space:nowrap;min-width:160px}
+    .field-type{color:#6b7280;font-size:11px;white-space:nowrap}
+    .field-desc{color:#374151}
+
+    /* Badges */
+    .badge{display:inline-block;font-size:10px;font-weight:700;padding:2px 7px;border-radius:20px;white-space:nowrap}
+    .b-llm{background:#ede9fe;color:#6d28d9}
+    .b-det{background:#d1fae5;color:#065f46}
+    .b-new{background:#fef3c7;color:#92400e}
+    .b-p2{background:#fee2e2;color:#991b1b}
+    .b-vis{background:#e0f2fe;color:#0369a1}
+    .b-audio{background:#fce7f3;color:#9d174d}
+
+    /* Arrow indicators */
+    .arrow-down{text-align:center;font-size:20px;color:#9ca3af;padding:4px 0}
+
+    /* Data handoff cards */
+    .handoff-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+    .handoff-card{background:#fff;border-radius:10px;border:1px solid #e5e7eb;overflow:hidden}
+    .handoff-header{padding:10px 14px;border-bottom:1px solid #f3f4f6;display:flex;align-items:center;gap:8px}
+    .handoff-from{font-size:11px;font-weight:700;color:#6b7280}
+    .handoff-arrow{color:#9ca3af;font-size:12px}
+    .handoff-to{font-size:11px;font-weight:700;color:#1a1a2e}
+    .handoff-body{padding:10px 14px}
+    .handoff-field{display:flex;align-items:flex-start;gap:6px;padding:3px 0;font-size:12px}
+    .handoff-field::before{content:"→";color:#9ca3af;flex-shrink:0;margin-top:1px}
+    .handoff-field-name{font-weight:700;color:#374151;min-width:140px}
+    .handoff-field-note{color:#6b7280}
+
+    /* Context store */
+    .context-box{background:#fffbeb;border:1px solid #fcd34d;border-radius:10px;padding:16px 20px;margin-bottom:20px}
+    .context-box h3{font-size:13px;font-weight:700;color:#92400e;margin-bottom:10px}
+    .context-item{display:flex;align-items:flex-start;gap:8px;font-size:12px;padding:4px 0;color:#78350f}
+    .context-item::before{content:"■";font-size:8px;color:#f59e0b;flex-shrink:0;margin-top:3px}
+  </style>
+</head>
+<body>
+
+<h1>Compliance AI — Agent Input / Output Diagram</h1>
+<p class="subtitle">How data flows between every agent and deterministic function — field by field, step by step</p>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- SECTION 1: FULL SEQUENCE DIAGRAM                            -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+<div class="section">
+  <div class="section-header">
+    <div class="section-num">1</div>
+    <div class="section-title">Full Sequential Flow</div>
+    <div class="section-note">Category Classifier runs alone first — others need its output</div>
+  </div>
+  <div class="diagram-wrap">
+    <div class="mermaid">
+sequenceDiagram
+    autonumber
+    participant U as User
+    participant PP as Pre-Processor
+    participant CC as Category Classifier
+    participant OR as Orchestrator
+    participant VA as Violations Agent
+    participant ARA as Auth Required Agent
+    participant PAA as Personal Attr. Agent
+    participant VIS as Vision Agent
+    participant AUD as Audio Agent
+    participant LPA as LP Agent
+    participant TC as Targeting Checker
+    participant AA as Alignment Agent
+    participant FG as Fix Generation
+    participant SE as Scoring Engine
+
+    U->>PP: ad_copy, image?, video?, lp_url?, age_min?, countries?, force_refresh?
+
+    Note over PP: Deterministic pre-processing
+    PP->>PP: ffmpeg → video_frames[] (≤30)
+    PP->>PP: ffmpeg → audio_bytes (.mp3)
+    PP->>PP: Firecrawl → lp_raw_html (8s timeout)
+    PP->>PP: SHA-256 cache key check
+    PP->>OR: normalized request context
+
+    Note over OR,CC: Sequential — others wait for category
+    OR->>CC: ad_copy
+    CC-->>OR: category, detected_language, confidence
+
+    Note over OR,TC: Phase 1 — 8 goroutines start simultaneously
+    par goroutine 1
+        OR->>VA: ad_copy + category
+        VA-->>OR: violations[]
+    and goroutine 2
+        OR->>ARA: ad_copy + category
+        ARA-->>OR: violations[] with auth_path
+    and goroutine 3
+        OR->>PAA: ad_copy
+        PAA-->>OR: violation? + attribute_type
+    and goroutine 4
+        OR->>VIS: image_bytes or video_frames[] + ad_copy + category
+        VIS-->>OR: extracted_text + violations[] + confidence
+    and goroutine 5
+        OR->>AUD: audio_bytes
+        AUD-->>OR: transcript + detected_language + status
+    and goroutine 6
+        OR->>LPA: lp_raw_html + ad_copy + category
+        LPA-->>OR: lp_violations[] + product_name + price_claims[] + health_claims[] + guarantee_claims[] + has_disclaimer + lp_summary
+    and goroutine 7
+        OR->>TC: category + age_min + countries[]
+        TC-->>OR: targeting_violations[] + advisories[]
+    end
+
+    Note over OR: sync.WaitGroup.Wait() — all Phase 1 done
+    OR->>OR: Store image_bytes + transcript in request context
+
+    Note over OR,VA: Phase 1b — Supplementary pass (only if image text or audio present)
+    OR->>VA: image_extracted_text + audio_transcript (if non-empty)
+    VA-->>OR: additional violations[] tagged [image text] or [voiceover]
+    OR->>PAA: audio_transcript (if non-empty)
+    PAA-->>OR: additional PA violation? from spoken content
+
+    Note over OR,AA: Phase 2 — Conditional (only if 2+ sources present)
+    OR->>AA: ad_copy + raw image_bytes (from context) + audio_transcript + lp_text_excerpt + key_claims[] + existing_violation_codes[]
+    AA-->>OR: alignment_violations[]
+
+    Note over OR,SE: Phase 3 — always runs
+    OR->>FG: ad_copy + all_violations[] (Phase 1 + 1b + Phase 2) + category
+    FG-->>OR: fixes[]
+
+    OR->>SE: all_violation_codes[] + category + is_authorized
+    SE-->>OR: score + status
+
+    OR-->>U: category + detected_language + violations[] + alignment_violations[] + advisories[] + fixes[] + score + status + lp_analysis_status + audio_analysis_status
+    </div>
+  </div>
+  <p class="diagram-caption">Phase 1b runs after WaitGroup.Wait() with near-zero added latency — LP Agent is the bottleneck, and image/audio processing finishes before LP in most cases.</p>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- SECTION 2: REQUEST CONTEXT STORE                            -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+<div class="section">
+  <div class="section-header">
+    <div class="section-num">2</div>
+    <div class="section-title">Request Context Store</div>
+    <div class="section-note">In-memory, per-request — not persisted to DB</div>
+  </div>
+  <div class="context-box">
+    <h3>Fields stored in Go request context and passed between phases</h3>
+    <div class="context-item"><strong>image_bytes</strong> — raw image bytes or nil. Written by Pre-Processor. Read by Vision Agent and Alignment Agent.</div>
+    <div class="context-item"><strong>video_frames[]</strong> — slice of frame byte slices extracted by ffmpeg. Written by Pre-Processor. Read by Vision Agent.</div>
+    <div class="context-item"><strong>audio_bytes</strong> — .mp3 audio track bytes. Written by Pre-Processor. Read by Audio Agent.</div>
+    <div class="context-item"><strong>audio_transcript</strong> — verbatim transcript. Written by Audio Agent after Phase 1. Read by Violations Agent (Phase 1b), Personal Attribute Agent (Phase 1b), and Alignment Agent (Phase 2).</div>
+    <div class="context-item"><strong>image_extracted_text</strong> — OCR output from Vision Agent. Written by Vision Agent after Phase 1. Read by Violations Agent (Phase 1b).</div>
+    <div class="context-item"><strong>lp_text_excerpt</strong> — structured LP text (body_start + body_end + headings). Written by LP Agent. Read by Alignment Agent.</div>
+    <div class="context-item"><strong>lp_key_claims</strong> — structured claim set from LP Agent. Written by LP Agent. Read by Alignment Agent.</div>
+    <div class="context-item"><strong>category</strong> — classification output. Written by Category Classifier. Read by all Phase 1 agents.</div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- SECTION 3: AGENT-BY-AGENT INPUT / OUTPUT                   -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+<div class="section">
+  <div class="section-header">
+    <div class="section-num">3</div>
+    <div class="section-title">Agent-by-Agent Input / Output — Field Level</div>
+  </div>
+
+  <table class="io-table">
+    <thead>
+      <tr>
+        <th style="width:18%">Agent</th>
+        <th style="width:8%">Type</th>
+        <th style="width:37%">Input Fields</th>
+        <th style="width:37%">Output Fields</th>
+      </tr>
+    </thead>
+    <tbody>
+
+      <!-- PRE-PROCESSOR -->
+      <tr class="phase-row"><td colspan="4">⚙ Pre-Processor — Deterministic · runs before everything</td></tr>
+      <tr>
+        <td><strong>Pre-Processor</strong></td>
+        <td><span class="badge b-det">Go</span></td>
+        <td>
+          <div class="field-list">
+            <div class="field"><span class="field-name">ad_copy</span><span class="field-type">string</span></div>
+            <div class="field"><span class="field-name">image</span><span class="field-type">file? (multipart)</span></div>
+            <div class="field"><span class="field-name">video</span><span class="field-type">file? (multipart)</span></div>
+            <div class="field"><span class="field-name">lp_url</span><span class="field-type">string?</span></div>
+            <div class="field"><span class="field-name">age_min</span><span class="field-type">int? (-1 = absent)</span></div>
+            <div class="field"><span class="field-name">countries</span><span class="field-type">[]string?</span></div>
+            <div class="field"><span class="field-name">force_refresh</span><span class="field-type">bool</span></div>
+          </div>
+        </td>
+        <td>
+          <div class="field-list">
+            <div class="field"><span class="field-name">normalized_copy</span><span class="field-type">string</span><span class="field-desc"> — trimmed, all copy fields joined</span></div>
+            <div class="field"><span class="field-name">image_bytes</span><span class="field-type">[]byte</span><span class="field-desc"> — nil if no image</span></div>
+            <div class="field"><span class="field-name">video_frames</span><span class="field-type">[][]byte</span><span class="field-desc"> — ffmpeg scene-change extraction ≤30 frames</span></div>
+            <div class="field"><span class="field-name">audio_bytes</span><span class="field-type">[]byte</span><span class="field-desc"> — ffmpeg audio track as .mp3</span></div>
+            <div class="field"><span class="field-name">lp_raw_html</span><span class="field-type">string</span><span class="field-desc"> — Firecrawl rendered HTML</span></div>
+            <div class="field"><span class="field-name">lp_fetch_status</span><span class="field-type">string</span><span class="field-desc"> — "fetched" | "failed_timeout" | "failed_js_rendered" | "not_provided"</span></div>
+            <div class="field"><span class="field-name">cache_key</span><span class="field-type">string</span><span class="field-desc"> — SHA-256 of copy + image size + lp_url + age + countries</span></div>
+            <div class="field"><span class="field-name">age_min</span><span class="field-type">int</span><span class="field-desc"> — passed through</span></div>
+            <div class="field"><span class="field-name">countries</span><span class="field-type">[]string</span><span class="field-desc"> — passed through</span></div>
+          </div>
+        </td>
+      </tr>
+
+      <!-- CATEGORY CLASSIFIER -->
+      <tr class="phase-row"><td colspan="4">→ Sequential · Category Classifier runs alone · others wait</td></tr>
+      <tr>
+        <td><strong>Category Classifier</strong></td>
+        <td><span class="badge b-llm">LLM</span></td>
+        <td>
+          <div class="field-list">
+            <div class="field"><span class="field-name">normalized_copy</span><span class="field-type">string</span></div>
+          </div>
+        </td>
+        <td>
+          <div class="field-list">
+            <div class="field"><span class="field-name">category</span><span class="field-type">string</span><span class="field-desc"> — e.g. "Alcohol", "Gambling", "Cryptocurrency — Exchange"</span></div>
+            <div class="field"><span class="field-name">category_state</span><span class="field-type">string</span><span class="field-desc"> — PROHIBITED | AUTH_REQUIRED | RESTRICTED | ALLOWED</span></div>
+            <div class="field"><span class="field-name">detected_language</span><span class="field-type">string</span><span class="field-desc"> — ISO 639-1, e.g. "tr", "en", "es"</span></div>
+            <div class="field"><span class="field-name">confidence</span><span class="field-type">float</span><span class="field-desc"> — 0.0–1.0</span></div>
+            <div class="field"><span class="field-name">reasoning</span><span class="field-type">string</span><span class="field-desc"> — one-sentence classification rationale</span></div>
+          </div>
+        </td>
+      </tr>
+
+      <!-- PHASE 1 PARALLEL -->
+      <tr class="phase-row"><td colspan="4">‖ Phase 1 — 8 goroutines running simultaneously · all receive category from context</td></tr>
+
+      <!-- VIOLATIONS AGENT -->
+      <tr>
+        <td><strong>Violations Agent</strong><br/><span style="font-size:11px;color:#6b7280">goroutine 1</span></td>
+        <td><span class="badge b-llm">LLM</span></td>
+        <td>
+          <div class="field-list">
+            <div class="field"><span class="field-name">normalized_copy</span><span class="field-type">string</span></div>
+            <div class="field"><span class="field-name">category</span><span class="field-type">string</span><span class="field-desc"> — from context</span></div>
+            <div style="color:#9ca3af;font-size:11px;padding:3px 0;font-style:italic">Phase 1b only (after WaitGroup):</div>
+            <div class="field"><span class="field-name">image_extracted_text</span><span class="field-type">string?</span><span class="field-desc"> — OCR from Vision Agent</span></div>
+            <div class="field"><span class="field-name">audio_transcript</span><span class="field-type">string?</span><span class="field-desc"> — from Audio Agent</span></div>
+          </div>
+        </td>
+        <td>
+          <div class="field-list">
+            <div class="field"><span class="field-name">violations[]</span><span class="field-type">AgentViolation[]</span></div>
+            <div class="field"><span class="field-name">  └ code</span><span class="field-type">string</span><span class="field-desc"> — P_* | R_* | M_* codes (27 total)</span></div>
+            <div class="field"><span class="field-name">  └ explanation</span><span class="field-type">string</span><span class="field-desc"> — quoted copy + source tag [Found in voiceover]</span></div>
+            <div class="field"><span class="field-name">  └ severity</span><span class="field-type">string</span><span class="field-desc"> — PROHIBITED | RESTRICTED | MODERATE</span></div>
+          </div>
+        </td>
+      </tr>
+
+      <!-- AUTH REQUIRED AGENT -->
+      <tr>
+        <td><strong>Auth Required Agent</strong><br/><span style="font-size:11px;color:#6b7280">goroutine 2</span></td>
+        <td><span class="badge b-llm">LLM</span></td>
+        <td>
+          <div class="field-list">
+            <div class="field"><span class="field-name">normalized_copy</span><span class="field-type">string</span></div>
+            <div class="field"><span class="field-name">category</span><span class="field-type">string</span></div>
+          </div>
+        </td>
+        <td>
+          <div class="field-list">
+            <div class="field"><span class="field-name">violations[]</span><span class="field-type">AgentViolation[]</span></div>
+            <div class="field"><span class="field-name">  └ code</span><span class="field-type">string</span><span class="field-desc"> — A_GAMBLING | A_ALCOHOL | A_FINANCIAL | A_DATING | A_CBD | A_PRESCRIPTION_DRUGS | A_SIEP</span></div>
+            <div class="field"><span class="field-name">  └ explanation</span><span class="field-type">string</span></div>
+            <div class="field"><span class="field-name">  └ auth_path</span><span class="field-type">string</span><span class="field-desc"> — exact Meta authorization URL for this category</span></div>
+          </div>
+        </td>
+      </tr>
+
+      <!-- PERSONAL ATTRIBUTE AGENT -->
+      <tr>
+        <td><strong>Personal Attribute Agent</strong><br/><span style="font-size:11px;color:#6b7280">goroutine 3</span></td>
+        <td><span class="badge b-llm">LLM</span></td>
+        <td>
+          <div class="field-list">
+            <div class="field"><span class="field-name">normalized_copy</span><span class="field-type">string</span></div>
+            <div style="color:#9ca3af;font-size:11px;padding:3px 0;font-style:italic">Phase 1b only:</div>
+            <div class="field"><span class="field-name">audio_transcript</span><span class="field-type">string?</span><span class="field-desc"> — spoken content may contain PA violations</span></div>
+          </div>
+        </td>
+        <td>
+          <div class="field-list">
+            <div class="field"><span class="field-name">violation_found</span><span class="field-type">bool</span></div>
+            <div class="field"><span class="field-name">explanation</span><span class="field-type">string</span><span class="field-desc"> — quoted copy or voiceover that violated</span></div>
+            <div class="field"><span class="field-name">attribute_type</span><span class="field-type">string</span><span class="field-desc"> — PA-001 health | PA-002 financial | PA-003 religion | PA-004 age | PA-005 sexual orientation | PA-006 race</span></div>
+            <div style="color:#9ca3af;font-size:11px;font-style:italic">→ converted to AgentViolation {code: P_PERSONAL_ATTRIBUTE} if violation_found = true</div>
+          </div>
+        </td>
+      </tr>
+
+      <!-- VISION AGENT -->
+      <tr>
+        <td><strong>Vision Agent</strong><br/><span style="font-size:11px;color:#6b7280">goroutine 4</span></td>
+        <td><span class="badge b-vis">LLM + Vision</span></td>
+        <td>
+          <div class="field-list">
+            <div class="field"><span class="field-name">image_bytes</span><span class="field-type">[]byte</span><span class="field-desc"> — single image OR nil</span></div>
+            <div class="field"><span class="field-name">video_frames</span><span class="field-type">[][]byte</span><span class="field-desc"> — frame slice OR nil</span></div>
+            <div class="field"><span class="field-name">normalized_copy</span><span class="field-type">string</span><span class="field-desc"> — context for visual comparison</span></div>
+            <div class="field"><span class="field-name">category</span><span class="field-type">string</span></div>
+            <div style="color:#9ca3af;font-size:11px;font-style:italic">Skips entirely if image_bytes = nil AND video_frames empty</div>
+          </div>
+        </td>
+        <td>
+          <div class="field-list">
+            <div class="field"><span class="field-name">extracted_text</span><span class="field-type">string</span><span class="field-desc"> — verbatim OCR of all visible text (Part 1)</span></div>
+            <div class="field"><span class="field-name">violations[]</span><span class="field-type">AgentViolation[]</span><span class="field-desc"> — visual-specific P_/R_/M_ codes (Part 2)</span></div>
+            <div class="field"><span class="field-name">  └ code</span><span class="field-type">string</span><span class="field-desc"> — e.g. R_BEFORE_AFTER_WEIGHT_VISUAL, P_ADULT_EXPLICIT</span></div>
+            <div class="field"><span class="field-name">  └ location</span><span class="field-type">string</span><span class="field-desc"> — "frame 3 of 8, top-left" etc.</span></div>
+            <div class="field"><span class="field-name">visual_check_confidence</span><span class="field-type">string</span><span class="field-desc"> — "high" | "partial" | "low"</span></div>
+            <div style="color:#9ca3af;font-size:11px;font-style:italic">→ extracted_text stored in context for Phase 1b Violations Agent</div>
+            <div style="color:#9ca3af;font-size:11px;font-style:italic">→ raw image_bytes stored in context for Phase 2 Alignment Agent</div>
+          </div>
+        </td>
+      </tr>
+
+      <!-- AUDIO AGENT -->
+      <tr>
+        <td><strong>Audio Agent</strong><br/><span style="font-size:11px;color:#6b7280">goroutine 5</span></td>
+        <td><span class="badge b-audio">LLM + Audio</span></td>
+        <td>
+          <div class="field-list">
+            <div class="field"><span class="field-name">audio_bytes</span><span class="field-type">[]byte</span><span class="field-desc"> — .mp3 from ffmpeg</span></div>
+            <div style="color:#9ca3af;font-size:11px;font-style:italic">Skips entirely if audio_bytes = nil (image-only or text-only input)</div>
+          </div>
+        </td>
+        <td>
+          <div class="field-list">
+            <div class="field"><span class="field-name">transcript</span><span class="field-type">string</span><span class="field-desc"> — verbatim spoken content, [inaudible] for unclear segments</span></div>
+            <div class="field"><span class="field-name">detected_language</span><span class="field-type">string</span><span class="field-desc"> — ISO 639-1</span></div>
+            <div class="field"><span class="field-name">has_voiceover</span><span class="field-type">bool</span></div>
+            <div class="field"><span class="field-name">audio_analysis_status</span><span class="field-type">string</span><span class="field-desc"> — "transcribed" | "no_speech_detected" | "low_quality_audio" | "music_only"</span></div>
+            <div class="field"><span class="field-name">duration_note</span><span class="field-type">string?</span></div>
+            <div style="color:#9ca3af;font-size:11px;font-style:italic">→ transcript stored in context for Phase 1b Violations + PA agents and Phase 2 Alignment Agent</div>
+          </div>
+        </td>
+      </tr>
+
+      <!-- LP AGENT -->
+      <tr>
+        <td><strong>LP Agent</strong><br/><span style="font-size:11px;color:#6b7280">goroutine 6</span></td>
+        <td><span class="badge b-new">HTTP + LLM</span></td>
+        <td>
+          <div class="field-list">
+            <div class="field"><span class="field-name">lp_raw_html</span><span class="field-type">string</span><span class="field-desc"> — Firecrawl rendered HTML. Pre-Processor sends: body_start (2000 chars) + body_end (1000 chars) + title + meta + h1/h2 tags</span></div>
+            <div class="field"><span class="field-name">normalized_copy</span><span class="field-type">string</span><span class="field-desc"> — context for comparison</span></div>
+            <div class="field"><span class="field-name">category</span><span class="field-type">string</span></div>
+            <div style="color:#9ca3af;font-size:11px;font-style:italic">Skips LLM call if lp_fetch_status ≠ "fetched" — returns advisory only</div>
+          </div>
+        </td>
+        <td>
+          <div class="field-list">
+            <div class="field"><span class="field-name">lp_violations[]</span><span class="field-type">AgentViolation[]</span><span class="field-desc"> — prohibited content found on LP (same codes as Violations Agent)</span></div>
+            <div class="field"><span class="field-name">product_name</span><span class="field-type">string</span></div>
+            <div class="field"><span class="field-name">price_claims[]</span><span class="field-type">string[]</span><span class="field-desc"> — exact quotes: "$29/month", "free trial"</span></div>
+            <div class="field"><span class="field-name">health_claims[]</span><span class="field-type">string[]</span><span class="field-desc"> — exact quotes</span></div>
+            <div class="field"><span class="field-name">guarantee_claims[]</span><span class="field-type">string[]</span><span class="field-desc"> — exact quotes</span></div>
+            <div class="field"><span class="field-name">has_disclaimer</span><span class="field-type">bool</span></div>
+            <div class="field"><span class="field-name">disclaimer_text</span><span class="field-type">string</span></div>
+            <div class="field"><span class="field-name">lp_summary</span><span class="field-type">string</span><span class="field-desc"> — one sentence</span></div>
+            <div class="field"><span class="field-name">domain</span><span class="field-type">string</span><span class="field-desc"> — root domain e.g. brand.com</span></div>
+            <div style="color:#9ca3af;font-size:11px;font-style:italic">→ price/health/guarantee claims stored in context as lp_key_claims for Phase 2</div>
+          </div>
+        </td>
+      </tr>
+
+      <!-- TARGETING CHECKER -->
+      <tr>
+        <td><strong>Targeting Checker</strong><br/><span style="font-size:11px;color:#6b7280">goroutine 7</span></td>
+        <td><span class="badge b-det">Go — no LLM</span></td>
+        <td>
+          <div class="field-list">
+            <div class="field"><span class="field-name">category</span><span class="field-type">string</span><span class="field-desc"> — from context</span></div>
+            <div class="field"><span class="field-name">age_min</span><span class="field-type">int</span><span class="field-desc"> — -1 if not provided</span></div>
+            <div class="field"><span class="field-name">countries</span><span class="field-type">[]string</span><span class="field-desc"> — ISO codes, empty if not provided</span></div>
+          </div>
+        </td>
+        <td>
+          <div class="field-list">
+            <div class="field"><span class="field-name">targeting_violations[]</span><span class="field-type">AgentViolation[]</span><span class="field-desc"> — hard breaches: e.g. Gambling ad with age_min=16 → R_TARGETING_AGE_BREACH</span></div>
+            <div class="field"><span class="field-name">advisories[]</span><span class="field-type">Advisory[]</span><span class="field-desc"> — missing data for restricted category</span></div>
+            <div class="field"><span class="field-name">  └ code</span><span class="field-type">string</span><span class="field-desc"> — ADV_MISSING_AGE_TARGETING | ADV_MISSING_GEO_TARGETING</span></div>
+            <div class="field"><span class="field-name">  └ message</span><span class="field-type">string</span></div>
+            <div class="field"><span class="field-name">  └ category</span><span class="field-type">string</span><span class="field-desc"> — "targeting"</span></div>
+          </div>
+        </td>
+      </tr>
+
+      <!-- PHASE 1B -->
+      <tr class="phase-row"><td colspan="4">→ Phase 1b — Supplementary violations pass · runs after WaitGroup.Wait() · only if image text or audio is present</td></tr>
+      <tr>
+        <td><strong>Violations Agent</strong><br/><span style="font-size:11px;color:#6b7280">second call</span></td>
+        <td><span class="badge b-llm">LLM</span></td>
+        <td>
+          <div class="field-list">
+            <div class="field"><span class="field-name">image_extracted_text</span><span class="field-type">string</span><span class="field-desc"> — OCR output from Vision Agent context</span></div>
+            <div class="field"><span class="field-name">audio_transcript</span><span class="field-type">string</span><span class="field-desc"> — transcript from Audio Agent context</span></div>
+            <div class="field"><span class="field-name">category</span><span class="field-type">string</span></div>
+            <div style="color:#9ca3af;font-size:11px;font-style:italic">Same prompt, different input. Skipped if both fields are empty.</div>
+          </div>
+        </td>
+        <td>
+          <div class="field-list">
+            <div class="field"><span class="field-name">violations[]</span><span class="field-type">AgentViolation[]</span><span class="field-desc"> — same codes, explanations prefixed with [Found in image text] or [Found in voiceover]</span></div>
+          </div>
+        </td>
+      </tr>
+      <tr>
+        <td><strong>Personal Attribute Agent</strong><br/><span style="font-size:11px;color:#6b7280">second call</span></td>
+        <td><span class="badge b-llm">LLM</span></td>
+        <td>
+          <div class="field-list">
+            <div class="field"><span class="field-name">audio_transcript</span><span class="field-type">string</span><span class="field-desc"> — voiceover may contain "Are you struggling with..." patterns</span></div>
+            <div style="color:#9ca3af;font-size:11px;font-style:italic">Skipped if audio_transcript is empty.</div>
+          </div>
+        </td>
+        <td>
+          <div class="field-list">
+            <div class="field"><span class="field-name">violation_found</span><span class="field-type">bool</span></div>
+            <div class="field"><span class="field-name">explanation</span><span class="field-type">string</span><span class="field-desc"> — prefixed [Found in voiceover]</span></div>
+            <div class="field"><span class="field-name">attribute_type</span><span class="field-type">string</span></div>
+          </div>
+        </td>
+      </tr>
+
+      <!-- PHASE 2 -->
+      <tr class="phase-row"><td colspan="4">→ Phase 2 — Alignment Agent · conditional · only if 2+ sources present</td></tr>
+      <tr>
+        <td><strong>Alignment Agent</strong></td>
+        <td><span class="badge b-p2">LLM + Vision · Phase 2</span></td>
+        <td>
+          <div class="field-list">
+            <div class="field"><span class="field-name">normalized_copy</span><span class="field-type">string</span></div>
+            <div class="field"><span class="field-name">image_bytes</span><span class="field-type">[]byte</span><span class="field-desc"> — raw bytes from context (NOT a description)</span></div>
+            <div class="field"><span class="field-name">audio_transcript</span><span class="field-type">string</span><span class="field-desc"> — from context</span></div>
+            <div class="field"><span class="field-name">lp_text_excerpt</span><span class="field-type">string</span><span class="field-desc"> — from LP Agent context</span></div>
+            <div class="field"><span class="field-name">lp_key_claims</span><span class="field-type">{ product_name, price_claims[], health_claims[], guarantee_claims[] }</span></div>
+            <div class="field"><span class="field-name">existing_violation_codes</span><span class="field-type">[]string</span><span class="field-desc"> — to avoid double-flagging</span></div>
+            <div style="color:#9ca3af;font-size:11px;font-style:italic">Trigger: 2+ of {copy, image_bytes, audio_transcript, lp_text} must be non-empty</div>
+          </div>
+        </td>
+        <td>
+          <div class="field-list">
+            <div class="field"><span class="field-name">violations[]</span><span class="field-type">AlignmentViolation[]</span></div>
+            <div class="field"><span class="field-name">  └ code</span><span class="field-type">string</span><span class="field-desc"> — ALIGN_PRODUCT_MISMATCH | ALIGN_CLAIM_MISMATCH | ALIGN_PRICE_MISMATCH | ALIGN_VISUAL_COPY_MISMATCH</span></div>
+            <div class="field"><span class="field-name">  └ explanation</span><span class="field-type">string</span></div>
+            <div class="field"><span class="field-name">  └ source_a</span><span class="field-type">string</span><span class="field-desc"> — "copy" | "visual" | "audio"</span></div>
+            <div class="field"><span class="field-name">  └ source_b</span><span class="field-type">string</span><span class="field-desc"> — "landing_page" | "copy" | "visual"</span></div>
+            <div class="field"><span class="field-name">  └ claim_in_source_a</span><span class="field-type">string</span><span class="field-desc"> — exact quote or description</span></div>
+            <div class="field"><span class="field-name">  └ claim_in_source_b</span><span class="field-type">string</span><span class="field-desc"> — exact contradicting quote</span></div>
+          </div>
+        </td>
+      </tr>
+
+      <!-- PHASE 3 -->
+      <tr class="phase-row"><td colspan="4">→ Phase 3 — Synthesis · always runs · no conditions</td></tr>
+      <tr>
+        <td><strong>Fix Generation Agent</strong></td>
+        <td><span class="badge b-llm">LLM</span></td>
+        <td>
+          <div class="field-list">
+            <div class="field"><span class="field-name">normalized_copy</span><span class="field-type">string</span></div>
+            <div class="field"><span class="field-name">category</span><span class="field-type">string</span></div>
+            <div class="field"><span class="field-name">all_violations[]</span><span class="field-type">AgentViolation[]</span><span class="field-desc"> — merged from Phase 1 + Phase 1b + Phase 2. Single batched call for all.</span></div>
+          </div>
+        </td>
+        <td>
+          <div class="field-list">
+            <div class="field"><span class="field-name">fixes[]</span><span class="field-type">Fix[]</span></div>
+            <div class="field"><span class="field-name">  └ violation_code</span><span class="field-type">string</span><span class="field-desc"> — matches a violation code from input</span></div>
+            <div class="field"><span class="field-name">  └ fix_type</span><span class="field-type">string</span><span class="field-desc"> — "prohibition" | "auth_path" | "rewrite"</span></div>
+            <div class="field"><span class="field-name">  └ explanation</span><span class="field-type">string</span></div>
+            <div class="field"><span class="field-name">  └ rewritten_copy</span><span class="field-type">string?</span><span class="field-desc"> — present for R_/M_ fixes only; absent for P_ and A_ (no creative fix possible)</span></div>
+          </div>
+        </td>
+      </tr>
+      <tr>
+        <td><strong>Scoring Engine</strong></td>
+        <td><span class="badge b-det">Go — no LLM</span></td>
+        <td>
+          <div class="field-list">
+            <div class="field"><span class="field-name">all_violation_codes[]</span><span class="field-type">[]string</span><span class="field-desc"> — all codes from Phase 1 + 1b + Phase 2 deduplicated</span></div>
+            <div class="field"><span class="field-name">category_state</span><span class="field-type">string</span><span class="field-desc"> — PROHIBITED | AUTH_REQUIRED | RESTRICTED | ALLOWED</span></div>
+            <div class="field"><span class="field-name">is_authorized</span><span class="field-type">bool</span><span class="field-desc"> — passed by caller (user claims authorization)</span></div>
+          </div>
+        </td>
+        <td>
+          <div class="field-list">
+            <div class="field"><span class="field-name">score</span><span class="field-type">int</span><span class="field-desc"> — 0–100</span></div>
+            <div class="field"><span class="field-name">status</span><span class="field-type">string</span><span class="field-desc"> — PROHIBITED | AUTH_REQUIRED | RESTRICTED | MODERATE | ALLOWED | ALLOWED_AUTHORIZED</span></div>
+            <div style="color:#9ca3af;font-size:11px;font-style:italic">Advisories[] do NOT enter the Scoring Engine. They are passed directly to the response.</div>
+          </div>
+        </td>
+      </tr>
+
+      <!-- FINAL RESPONSE -->
+      <tr class="phase-row"><td colspan="4">→ Final Response — Orchestrator assembles and returns to user</td></tr>
+      <tr>
+        <td><strong>API Response</strong></td>
+        <td><span class="badge b-det">Go</span></td>
+        <td colspan="2">
+          <div class="field-list" style="display:grid;grid-template-columns:1fr 1fr;gap:0 24px">
+            <div class="field"><span class="field-name">category</span><span class="field-type">string</span></div>
+            <div class="field"><span class="field-name">detected_language</span><span class="field-type">string</span></div>
+            <div class="field"><span class="field-name">score</span><span class="field-type">int (0–100)</span></div>
+            <div class="field"><span class="field-name">status</span><span class="field-type">string</span></div>
+            <div class="field"><span class="field-name">violations[]</span><span class="field-type">Violation[] — enriched with title + severity</span></div>
+            <div class="field"><span class="field-name">alignment_violations[]</span><span class="field-type">AlignmentViolation[]</span></div>
+            <div class="field"><span class="field-name">advisories[]</span><span class="field-type">Advisory[] — does NOT affect score</span></div>
+            <div class="field"><span class="field-name">fixes[]</span><span class="field-type">Fix[]</span></div>
+            <div class="field"><span class="field-name">lp_analysis_status</span><span class="field-type">string</span></div>
+            <div class="field"><span class="field-name">audio_analysis_status</span><span class="field-type">string</span></div>
+            <div class="field"><span class="field-name">visual_check_confidence</span><span class="field-type">string</span></div>
+            <div class="field"><span class="field-name">check_id</span><span class="field-type">UUID — stored in DB</span></div>
+          </div>
+        </td>
+      </tr>
+
+    </tbody>
+  </table>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- SECTION 4: DATA HANDOFF MAP                                 -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+<div class="section">
+  <div class="section-header">
+    <div class="section-num">4</div>
+    <div class="section-title">Cross-Agent Data Handoffs</div>
+    <div class="section-note">Which fields flow from one agent into another</div>
+  </div>
+  <div class="handoff-grid">
+
+    <div class="handoff-card">
+      <div class="handoff-header">
+        <span class="handoff-from">Category Classifier</span>
+        <span class="handoff-arrow">→</span>
+        <span class="handoff-to">All Phase 1 agents</span>
+      </div>
+      <div class="handoff-body">
+        <div class="handoff-field"><span class="handoff-field-name">category</span><span class="handoff-field-note">used by Violations, Auth, LP, Vision, Targeting</span></div>
+        <div class="handoff-field"><span class="handoff-field-name">category_state</span><span class="handoff-field-note">used by Scoring Engine and Targeting Checker</span></div>
+        <div class="handoff-field"><span class="handoff-field-name">detected_language</span><span class="handoff-field-note">passed to final response</span></div>
+      </div>
+    </div>
+
+    <div class="handoff-card">
+      <div class="handoff-header">
+        <span class="handoff-from">Vision Agent</span>
+        <span class="handoff-arrow">→</span>
+        <span class="handoff-to">Violations Agent (Phase 1b)</span>
+      </div>
+      <div class="handoff-body">
+        <div class="handoff-field"><span class="handoff-field-name">extracted_text</span><span class="handoff-field-note">stored in context after Phase 1 — checked for text violations</span></div>
+      </div>
+    </div>
+
+    <div class="handoff-card">
+      <div class="handoff-header">
+        <span class="handoff-from">Vision Agent</span>
+        <span class="handoff-arrow">→</span>
+        <span class="handoff-to">Alignment Agent (Phase 2)</span>
+      </div>
+      <div class="handoff-body">
+        <div class="handoff-field"><span class="handoff-field-name">image_bytes (raw)</span><span class="handoff-field-note">NOT a description — raw bytes via context. Alignment Agent sees the image directly.</span></div>
+      </div>
+    </div>
+
+    <div class="handoff-card">
+      <div class="handoff-header">
+        <span class="handoff-from">Audio Agent</span>
+        <span class="handoff-arrow">→</span>
+        <span class="handoff-to">Violations Agent + PA Agent (Phase 1b)</span>
+      </div>
+      <div class="handoff-body">
+        <div class="handoff-field"><span class="handoff-field-name">transcript</span><span class="handoff-field-note">checked for the same violation codes as ad copy</span></div>
+        <div class="handoff-field"><span class="handoff-field-name">transcript</span><span class="handoff-field-note">PA Agent re-checks for personal attribute patterns in spoken content</span></div>
+      </div>
+    </div>
+
+    <div class="handoff-card">
+      <div class="handoff-header">
+        <span class="handoff-from">Audio Agent</span>
+        <span class="handoff-arrow">→</span>
+        <span class="handoff-to">Alignment Agent (Phase 2)</span>
+      </div>
+      <div class="handoff-body">
+        <div class="handoff-field"><span class="handoff-field-name">transcript</span><span class="handoff-field-note">spoken claims compared against LP claims for contradiction</span></div>
+      </div>
+    </div>
+
+    <div class="handoff-card">
+      <div class="handoff-header">
+        <span class="handoff-from">LP Agent</span>
+        <span class="handoff-arrow">→</span>
+        <span class="handoff-to">Alignment Agent (Phase 2)</span>
+      </div>
+      <div class="handoff-body">
+        <div class="handoff-field"><span class="handoff-field-name">lp_text_excerpt</span><span class="handoff-field-note">raw text for Alignment Agent to read directly</span></div>
+        <div class="handoff-field"><span class="handoff-field-name">product_name</span><span class="handoff-field-note">compared against copy for ALIGN_PRODUCT_MISMATCH</span></div>
+        <div class="handoff-field"><span class="handoff-field-name">price_claims[]</span><span class="handoff-field-note">compared against copy for ALIGN_PRICE_MISMATCH</span></div>
+        <div class="handoff-field"><span class="handoff-field-name">health_claims[]</span><span class="handoff-field-note">compared against copy for ALIGN_CLAIM_MISMATCH</span></div>
+        <div class="handoff-field"><span class="handoff-field-name">guarantee_claims[]</span><span class="handoff-field-note">compared against copy for ALIGN_CLAIM_MISMATCH</span></div>
+      </div>
+    </div>
+
+    <div class="handoff-card">
+      <div class="handoff-header">
+        <span class="handoff-from">All agents (Phase 1 + 1b + 2)</span>
+        <span class="handoff-arrow">→</span>
+        <span class="handoff-to">Fix Generation Agent</span>
+      </div>
+      <div class="handoff-body">
+        <div class="handoff-field"><span class="handoff-field-name">violations[] merged</span><span class="handoff-field-note">all violation objects from all agents, deduplicated by code</span></div>
+      </div>
+    </div>
+
+    <div class="handoff-card">
+      <div class="handoff-header">
+        <span class="handoff-from">All agents (Phase 1 + 1b + 2)</span>
+        <span class="handoff-arrow">→</span>
+        <span class="handoff-to">Scoring Engine</span>
+      </div>
+      <div class="handoff-body">
+        <div class="handoff-field"><span class="handoff-field-name">violation_codes[]</span><span class="handoff-field-note">code strings only — Scoring Engine doesn't need explanations</span></div>
+        <div class="handoff-field"><span class="handoff-field-name">advisories[]</span><span class="handoff-field-note">NOT passed to Scoring Engine — passed directly to response</span></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+  mermaid.initialize({
+    startOnLoad: true,
+    theme: 'default',
+    themeVariables: {
+      fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+      fontSize: '12px'
+    },
+    sequence: { useMaxWidth: true, messageAlign: 'left' }
+  });
+</script>
+</body>
+</html>
